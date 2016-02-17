@@ -1,0 +1,24 @@
+{
+  "templates": {
+    "ComplexED": {
+      "condition": {
+        "eventDescription": "ed1"
+      },
+      "core": {
+        "eventDescription": "ed2"
+      },
+      "complexKind": "complexKind"
+    },
+    "EventDescriptor": {
+      "eventProcess": {
+        "parameters": "eventProcess"
+      },
+      "e_features": {
+        "descriptor": "eventFeatures"
+      },
+      "profiledParticipant": {
+        "descriptor": "objectDescriptor"
+      }
+    }
+  }
+}
