@@ -1,4 +1,2 @@
-# robot-code
-Robot code repository, can be used to drive different robotics applications.
-
-* Relies on framework-code repository (and all its requirements): https://github.com/icsi-berkeley/framework-code
+# starcraft_code
+Repository for code used in Starcraft NLU product, including: templates, specializer, and solver. 
