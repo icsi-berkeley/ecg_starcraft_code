@@ -26,6 +26,8 @@ from nluas.utils import *
 import sys
 import random
 from math import sqrt
+from starcraft.starcraft_game import *
+from threading import Lock
 
 import os
 dir_name = os.path.dirname(os.path.realpath(__file__))
@@ -39,10 +41,91 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
         self._recent = None
         self._wh = None
 
+        self.world = self.build_world("world.json")
+
         self._units = {}
 
-        import subprocess
-        subprocess.Popen(["say", "setting up problem solver"])
+        self._inputs = []
+        self._conditions = []
+        self._terminate = False
+        self._lock = Lock()
+
+        self.game = Starcraft_Game(self.transport)
+
+        self.solve()
+
+    @run_async
+    def callback(self, ntuple, *args, **kwargs):
+        """
+        Called asychronously when a ntuple is available from the specializer. Adds it to a
+        queue of inputs.
+        """
+        if ntuple == '"QUIT"':
+            return self.close()
+        with self._lock:
+            self._inputs.append(ntuple)
+
+    @run_async
+    def close(self):
+        """
+        Called to terminate the solver's while loop.
+        """
+        with self._lock:
+            self._terminate = True
+
+    def solve(self):
+        """
+        Checks the input queue and inserts any pending inputs to the conditions data structure.
+        Executes conditions once all inputs have been processed.
+        """
+        game_started = False
+        while not self._terminate:
+            if len(self._inputs) > 0:
+                with self._lock:
+                    json_ntuple = self._inputs.pop(0)
+                self.insert_condition(json_ntuple)
+            if game_started:
+                self.execute_conditions()
+            else:
+                game_started = self.game.is_started()
+                if game_started:
+                    print("The game has begun.")
+
+    def insert_condition(self, json_ntuple):
+        """
+        Adds the described action to the conditions data structure with the right priority and
+        sets it to execute the right number of times
+        """
+        import json # something is wrong with the json parsing. i shouldn't have to do this
+        self._conditions.append(json.loads(self.decoder.convert_JSON_to_ntuple(json_ntuple)))
+
+    def execute_conditions(self):
+        """
+        Executes the commands in the input data structure
+        """
+        completed = []
+        for index, ntuple in enumerate(self._conditions):
+            predicate_type = ntuple['predicate_type']
+            try:
+                dispatch = getattr(self, "solve_%s" %predicate_type)
+                dispatch(ntuple)
+                completed.insert(0, index)
+            except AttributeError as e:
+                traceback.print_exc()
+                message = "I cannot solve a(n) {}.".format(predicate_type)
+                self.identification_failure(message)
+            except RuntimeWarning as e:
+                pass
+            except RuntimeError as e:
+                print(e)
+        for index in completed:
+            del self._conditions[index]
+
+    def command_build(self, parameters):
+        obj = parameters['createdThing']['objectDescriptor']['type']
+        worker = self.game.get_worker()
+        location = self.game.get_build_location(obj)
+        self.game.build(worker, location)
 
     def build_world(self, external_file):
         world = Struct()
@@ -453,7 +536,7 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
                 return [getattr(self.world, description['referent'])]
         obj_type = description['type']
         objs = []
-        for item in self.world.__dict__.keys():
+        for item in self.world.keys():
             if hasattr(getattr(self.world, item), 'type') and getattr(getattr(self.world, item), 'type') == obj_type:
                 objs += [getattr(self.world, item)]
         copy = []
