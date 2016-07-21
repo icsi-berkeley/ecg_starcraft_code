@@ -122,10 +122,18 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
             del self._conditions[index]
 
     def command_build(self, parameters):
-        obj = parameters['createdThing']['objectDescriptor']['type']
-        worker = self.game.get_worker()
-        location = self.game.get_build_location(obj)
-        self.game.build(worker, location)
+        obj = parameters['createdThing']['objectDescriptor']
+        obj_type = obj['type']
+        obj_count = 1
+        if obj['number'] == "plural":
+            obj_count = int(obj['quantity']['amount']['value'])
+        #worker = self.game.get_worker()
+        #location = self.game.get_build_location(obj)
+        remaining = self.game.build(obj_type, obj_count)
+        if int(remaining) > 0.0:
+            if obj['number'] == "plural":
+                obj['quantity']['amount']['value'] = int(remaining)
+            raise RuntimeWarning("Not able to build them all")
 
     def build_world(self, external_file):
         world = Struct()

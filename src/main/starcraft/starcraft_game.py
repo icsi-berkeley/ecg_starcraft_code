@@ -61,7 +61,7 @@ class Starcraft_Game(object):
                 if isinstance(response, dict) and 'head' in response and response['head'] == response_head:
                     print("received: ", response)
                     self._completed.insert(0, index)
-                    if response["status"] == "success":
+                    if response["status"] == "success" or 'remaining' in response:
                         return response
                     raise RuntimeWarning("Could not complete: " + str(message))
         raise RuntimeError("Command timed out: " + str(message))
@@ -79,8 +79,15 @@ class Starcraft_Game(object):
     def get_build_location(self, building):
         pass
 
-    def build(self, worker, building):
-        pass
+    def build(self, unit_type, count):
+        message = {
+            "action": "build",
+            "unit_type": unit_type,
+            "count": count
+        }
+        response = self.send_and_receive(message)
+        if response:
+            return int(response['remaining'])
 
     def is_started(self):
         message = {"action": "is_started"}
