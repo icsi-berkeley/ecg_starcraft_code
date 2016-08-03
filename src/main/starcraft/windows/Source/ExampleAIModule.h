@@ -33,4 +33,12 @@ private:
   TransportBridge* tb;
   rapidjson::Document* doc;
   bool isDataSet = false;
+/*
+  bool readMessage(rapidjson::Document message, rapidjson::Document ntuple);
+  bool sendMessage(rapidjson::Document response);
+
+  bool validateUnit(Unit unit);
+  bool buildUnit(string type, unit actors);
+  int buildUnits(string type, count, unit actors);
+*/
 };
