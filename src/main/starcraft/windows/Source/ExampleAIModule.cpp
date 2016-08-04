@@ -15,9 +15,24 @@ using namespace BWAPI;
 using namespace Filter;
 
 void ExampleAIModule::onStart() {
-  // Print the map name.
-  // BWAPI returns std::string when retrieving a string, don't forget to add .c_str() when printing!
-  Broodwar << "The map is " << Broodwar->mapName() << "!" << std::endl;
+  int iResult;
+  WSADATA wsaData;
+
+  iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+  if (iResult != 0) {
+    fprintf(stderr, "WSAStartup failed with error: %d\n", iResult);
+    Broodwar->sendText("WSAStartup failed with error");
+  }
+
+  bridge = new TransportBridge();
+  message = new rapidjson::Document();
+  ntuple = new rapidjson::Document();
+  response = new rapidjson::StringBuffer();
+  responseWriter = new rapidjson::Writer<rapidjson::StringBuffer>(*response);
+
+  responseWriter->StartArray();
+  responseWriter->String("SHOUT");
+  responseWriter->String("StarCraft");
 
   // Enable the UserInput flag, which allows us to control the bot and type messages.
   Broodwar->enableFlag(Flag::UserInput);
@@ -35,94 +50,54 @@ void ExampleAIModule::onStart() {
 void ExampleAIModule::onEnd(bool isWinner) {}
 
 void ExampleAIModule::onFrame() {
-  int iResult;
-  WSADATA wsaData;
-
-  iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-  if (iResult != 0) {
-    fprintf(stderr, "WSAStartup failed with error: %d\n", iResult);
-    Broodwar->sendText("WSAStartup failed with error");
-  }
-
-  // Create the transport bridge with default settings for
-  // name and Bridge Server location.
-  if (!tb) {
-    tb = new TransportBridge();
-    Broodwar->sendText("Created transport bridge");
-  }
-  // Place to store data from server.
-  if (!doc) {
-    doc = new rapidjson::Document();
-    Broodwar->sendText("create rapidjson doc");
-  }
-
-
-  if (tb->data_available()) {
-    tb->recv_json(doc);
-
-    if ((size_t)doc->Capacity() > 3) {
-      Broodwar->sendText((*doc)[3].GetString());
+  if (readMessage()) {
+    if (!strcmp((*ntuple)["action"].GetString(), "is_started")) {
+      setResponse("status", "success");
     }
-
-
-    // Check if it's for me
-    if (!strcmp((*doc)[0].GetString(), "SHOUT") &&
-      !strcmp((*doc)[2].GetString(), "StarCraft")) {
-      // Print message
-      rapidjson::StringBuffer strbuf;
-      rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
-      (*doc)[3].Accept(writer);
-      printf("Got message from %s: %s\n", (*doc)[1].GetString(), strbuf.GetString());
-
-      rapidjson::Document ntuple = rapidjson::Document();
-      ntuple.Parse((*doc)[3].GetString());
-      // Send a reply to whoever sent the message.
-      char charbuf[1024];
-      if (!strcmp(ntuple["action"].GetString(), "is_started")) {
-        _snprintf_s(charbuf, 1024, _TRUNCATE, "[\"SHOUT\", \"StarCraft\", \"%s\", \"{\\\"head\\\": \\\"%s\\\", \\\"status\\\": \\\"success\\\"}\"]", (*doc)[1].GetString(), ntuple["response_head"].GetString());
-      }
-      else if (!strcmp(ntuple["action"].GetString(), "build")) {
-        int count = ntuple["count"].GetInt();
-        Broodwar->sendText("count: %d", count);
-        int minerals = Broodwar->self()->minerals();
-        bool success = false;
-        for (auto &u : Broodwar->self()->getUnits()) {
-          if (!strcmp(ntuple["unit_type"].GetString(), "barracks")) {
-            if (u->getType().isWorker()) {
-              TilePosition targetBuildLocation = Broodwar->getBuildLocation(UnitTypes::Terran_Barracks, u->getTilePosition());
-              if (targetBuildLocation) {
-                if (minerals > UnitTypes::Terran_Barracks.mineralPrice() && Broodwar->canMake(UnitTypes::Terran_Barracks, u) && u->build(UnitTypes::Terran_Barracks, targetBuildLocation)) {
-                  Broodwar->sendText("CAN BUILD BARRACKS");
-                  minerals = minerals - UnitTypes::Terran_Barracks.mineralPrice();
-                  count--;
-                  if (count <= 0.0) {
-                    _snprintf_s(charbuf, 1024, _TRUNCATE, "[\"SHOUT\", \"StarCraft\", \"%s\", \"{\\\"head\\\": \\\"%s\\\", \\\"status\\\": \\\"success\\\", \\\"remaining\\\": \\\"%d\\\"}\"]", (*doc)[1].GetString(), ntuple["response_head"].GetString(), count);
-                    success = true;
-                    break;
-                  }
+    else if (!strcmp((*ntuple)["action"].GetString(), "build")) {
+      int count = (*ntuple)["count"].GetInt();
+      Broodwar->sendText("count: %d", count);
+      int minerals = Broodwar->self()->minerals();
+      bool success = false;
+      for (auto &u : Broodwar->self()->getUnits()) {
+        if (!strcmp((*ntuple)["unit_type"].GetString(), "barracks")) {
+          if (u->getType().isWorker()) {
+            TilePosition targetBuildLocation = Broodwar->getBuildLocation(UnitTypes::Terran_Barracks, u->getTilePosition());
+            if (targetBuildLocation) {
+              if (minerals > UnitTypes::Terran_Barracks.mineralPrice() && Broodwar->canMake(UnitTypes::Terran_Barracks, u) && u->build(UnitTypes::Terran_Barracks, targetBuildLocation)) {
+                Broodwar->sendText("CAN BUILD BARRACKS");
+                minerals = minerals - UnitTypes::Terran_Barracks.mineralPrice();
+                count--;
+                if (count <= 0.0) {
+                  setResponse("status", "success");
+                  setResponse("remaining", count);
+                  success = true;
+                  break;
                 }
               }
             }
           }
-          else if (!strcmp(ntuple["unit_type"].GetString(), "grunt")) {
-            if (Broodwar->canMake(UnitTypes::Terran_Marine, u) && u->train(UnitTypes::Terran_Marine)) {
-              Broodwar->sendText("CAN BUILD MARINE");
-              count--;
-              if (count <= 0.0) {
-                _snprintf_s(charbuf, 1024, _TRUNCATE, "[\"SHOUT\", \"StarCraft\", \"%s\", \"{\\\"head\\\": \\\"%s\\\", \\\"status\\\": \\\"success\\\", \\\"remaining\\\": \\\"%d\\\"}\"]", (*doc)[1].GetString(), ntuple["response_head"].GetString(), count);
-                success = true;
-                break;
-              }
+        }
+        else if (!strcmp((*ntuple)["unit_type"].GetString(), "grunt")) {
+          if (Broodwar->canMake(UnitTypes::Terran_Marine, u) && u->train(UnitTypes::Terran_Marine)) {
+            Broodwar->sendText("CAN BUILD MARINE");
+            count--;
+            if (count <= 0.0) {
+              setResponse("status", "success");
+              setResponse("remaining", count);
+              success = true;
+              break;
             }
           }
         }
-        if (!success) {
-          _snprintf_s(charbuf, 1024, _TRUNCATE, "[\"SHOUT\", \"StarCraft\", \"%s\", \"{\\\"head\\\": \\\"%s\\\", \\\"status\\\": \\\"failed\\\", \\\"remaining\\\": \\\"%d\\\"}\"]", (*doc)[1].GetString(), ntuple["response_head"].GetString(), count);
-
-        }
       }
-      tb->send_string(charbuf);
+      if (!success) {
+        setResponse("status", "failed");
+        setResponse("remaining", count);
+      }
     }
+
+    sendMessage();
   }
 
   // Called once every game frame
@@ -229,3 +204,44 @@ void ExampleAIModule::onSaveGame(std::string gameName) {
 }
 
 void ExampleAIModule::onUnitComplete(BWAPI::Unit unit) {}
+
+bool ExampleAIModule::readMessage() {
+  if (bridge->data_available()) {
+    bridge->recv_json(message);
+
+    // Printing the message
+    if ((size_t)message->Capacity() > 3) Broodwar->sendText((*message)[3].GetString());
+
+    // Check if it's for me
+    if (!strcmp((*message)[0].GetString(), "SHOUT") && !strcmp((*message)[2].GetString(), "StarCraft")) {
+      ntuple->Parse((*message)[3].GetString());
+      responseWriter->String((*message)[1].GetString());
+      responseWriter->StartObject();
+      responseWriter->Key("head");
+      responseWriter->String((*ntuple)["response_head"].GetString());
+      return true;
+    }
+  }
+  return false;
+}
+
+bool ExampleAIModule::sendMessage() {
+  responseWriter->EndObject();
+  responseWriter->EndArray();
+
+  Broodwar << response->GetString() << std::endl;
+  bridge->send_string(response->GetString());
+  return true;
+}
+
+bool ExampleAIModule::setResponse(const std::string key, const std::string value) {
+  responseWriter->Key(key.c_str());
+  responseWriter->String(value.c_str());
+  return true;
+}
+
+bool ExampleAIModule::setResponse(const std::string key, const int value) {
+  responseWriter->Key(key.c_str());
+  responseWriter->Int(value);
+  return true;
+}

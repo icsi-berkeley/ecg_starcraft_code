@@ -30,13 +30,18 @@ public:
   virtual void onUnitComplete(BWAPI::Unit unit);
   // Everything below this line is safe to modify.
 private:
-  TransportBridge* tb;
-  rapidjson::Document* doc;
+  TransportBridge* bridge;
+  rapidjson::Document* message;
+  rapidjson::Document* ntuple;
+  rapidjson::StringBuffer* response;
+  rapidjson::Writer<rapidjson::StringBuffer>* responseWriter;
   bool isDataSet = false;
-/*
-  bool readMessage(rapidjson::Document message, rapidjson::Document ntuple);
-  bool sendMessage(rapidjson::Document response);
 
+  bool readMessage();
+  bool sendMessage();
+  bool ExampleAIModule::setResponse(const std::string key, const std::string value);
+  bool ExampleAIModule::setResponse(const std::string key, const int value);
+/*
   bool validateUnit(Unit unit);
   bool buildUnit(string type, unit actors);
   int buildUnits(string type, count, unit actors);

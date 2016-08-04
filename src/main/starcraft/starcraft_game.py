@@ -37,7 +37,7 @@ class Starcraft_Game(object):
         queue of game responses.
         """
         with self._lock:
-            self._responses.append(json.loads(json.loads(response)))
+            self._responses.append(json.loads(response))
 
     def send_and_receive(self, message, timeout=5):
         """
