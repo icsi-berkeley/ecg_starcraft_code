@@ -30,10 +30,6 @@ void ExampleAIModule::onStart() {
   response = new rapidjson::StringBuffer();
   responseWriter = new rapidjson::Writer<rapidjson::StringBuffer>(*response);
 
-  responseWriter->StartArray();
-  responseWriter->String("SHOUT");
-  responseWriter->String("StarCraft");
-
   // Enable the UserInput flag, which allows us to control the bot and type messages.
   Broodwar->enableFlag(Flag::UserInput);
 
@@ -215,6 +211,10 @@ bool ExampleAIModule::readMessage() {
     // Check if it's for me
     if (!strcmp((*message)[0].GetString(), "SHOUT") && !strcmp((*message)[2].GetString(), "StarCraft")) {
       ntuple->Parse((*message)[3].GetString());
+      response->Clear(); // Clear the previous response
+      responseWriter->StartArray();
+      responseWriter->String("SHOUT");
+      responseWriter->String("StarCraft");
       responseWriter->String((*message)[1].GetString());
       responseWriter->StartObject();
       responseWriter->Key("head");
