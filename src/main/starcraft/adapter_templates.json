@@ -1,0 +1,16 @@
+{
+  "templates": {
+    "is_started": {
+      "action": "is_started"
+    },
+    "build": {
+      "action": "build",
+      "unit_type": "STRING",
+      "quantity": "INTEGER"
+    },
+    "gather": {
+      "action": "gather",
+      "resource_type": "STRING"
+    }
+  }
+}

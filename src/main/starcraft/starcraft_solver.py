@@ -14,18 +14,13 @@ from nluas.app.core_solver import *
 from nluas.utils import *
 import sys
 from threading import Thread, Lock
-from functools import wraps
 from nluas.Transport import Transport
 import json
 import time
+from pprint import pprint
 
-def run_async(func):
-    @wraps(func)
-    def async_func(*args, **kwargs):
-        func_process = Thread(target=func, args=args, kwargs=kwargs)
-        func_process.start()
-        return func_process
-    return async_func
+import os
+dir_name = os.path.dirname(os.path.realpath(__file__))
 
 class BasicStarcraftProblemSolver(CoreProblemSolver):
     def __init__(self, args):
@@ -33,134 +28,180 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
         self.headings = dict(north=(0.0, 1.0, 0.0), south=(0.0, -1.0, 0.0),
                     east=(1.0, 0.0, 0.0), west=(-1.0, 0.0, 0.0))
 
-        self._recent = None
-        self._wh = None
-
-        self._units = {}
-
         self._inputs = []
-        self._terminate = False
         self._lock = Lock()
-        self.adapter_address = "StarCraft"
+        self._game_started = False
+        self._verbose = True
+
         self._response = None
+        self.adapter_address = "StarCraft"
         self.transport.subscribe(self.adapter_address, self.adapter_callback)
+        self.adapter_templates = self.read_templates(
+            os.path.join(dir_name, "adapter_templates.json"))
 
-        self.solve()
+    def read_templates(self, filename):
+        """ Sets each template to ordered dict."""
+        base = OrderedDict()
+        with open(filename, "r") as data_file:
+            data = json.load(data_file, object_pairs_hook=OrderedDict)
+            for name, template in data['templates'].items():
+                base[name] = template
+        return base
 
-    @run_async
-    def callback(self, ntuple, *args, **kwargs):
+    def callback(self, actspec):
         """
-        Called asychronously when a ntuple is available from the specializer. Adds it to a
+        Called asychronously when an actspec is available from the specializer. Adds it to a
         queue of inputs.
         """
-        if ntuple == '"QUIT"':
+        if self._verbose:
+            print("Received ActSpec:")
+            pprint(actspec)
+        if self.is_quit(actspec):
             return self.close()
         with self._lock:
-            self._inputs.append(json.loads(self.decoder.convert_JSON_to_ntuple(ntuple)))
+            self._inputs.append(actspec)
 
-    @run_async
-    def adapter_callback(self, response, *args, **kwargs):
+    def adapter_callback(self, response):
         """
         Called asychronously when a response is sent from the game. Adds it to a
         queue of game responses.
         """
+        if self._verbose:
+            print("Recieved adapter response:")
+            pprint(response)
         with self._lock:
-            self._response = json.loads(response)
-
-    @run_async
-    def close(self):
-        """
-        Called to terminate the solver's while loop.
-        """
-        with self._lock:
-            self._terminate = True
+            self._response = response
 
     def solve(self):
         """
         Checks the input queue and inserts any pending inputs to the conditions data structure.
         Executes conditions once all inputs have been processed.
         """
-        game_started = False
-        while not self._terminate:
-            if game_started:
-                self.execute_commands()
+        if not self._game_started:
+            self._game_started = self.is_started()
+            if self._game_started and self._verbose:
+                print("Connected to StarCraft game")
             else:
-                game_started = self.is_started()
-                if game_started:
-                    print("The game has begun.")
+                return
 
-    def execute_commands(self):
-        """
-        Executes the commands in the input data structure
-        """
         completed = []
-        for index, ntuple in enumerate(self._inputs):
-            predicate_type = ntuple['predicate_type']
+        for index, actspec in enumerate(self._inputs):
+            predicate_type = actspec['predicate_type']
             try:
                 dispatch = getattr(self, "solve_%s" %predicate_type)
-                dispatch(ntuple)
+                dispatch(actspec)
                 completed.insert(0, index)
             except AttributeError as e:
                 traceback.print_exc()
                 message = "I cannot solve a(n) {}.".format(predicate_type)
                 self.identification_failure(message)
             except RuntimeWarning as e:
-                pass
-            except RuntimeError as e:
                 print(e)
+            except RuntimeError as e:
+                traceback.print_exc()
+                completed.insert(0, index)
         for index in completed:
             del self._inputs[index]
 
-    def send_and_receive(self, message, timeout=5):
+    def adapter_command(self, message, timeout=5):
         """
-        Sends message and waits for a response with response_head
+        Sends message to the adapter and waits for a response
         """
+        self.validate_message(message)
+
         send_time = time.time()
         self._response = None
-        response_head = str(send_time) # DELETE ME
-        message["response_head"] = response_head
         self.transport.send(self.adapter_address, json.dumps(message))
-        print("sent: ", message)
+
+        if self._verbose:
+            print("Sent to adapter:")
+            pprint(message)
 
         while time.time() - send_time <= timeout:
             if self._response:
-                print("received: ", self._response)
-                if self._response["status"] == "success" or 'remaining' in self._response:
-                    return self._response
-                raise RuntimeWarning("Could not complete: " + str(message))
+                if self._verbose:
+                    print("received:")
+                    pprint(self._response)
+                return self._response
+            time.sleep(1.0 / 24.0) # Shortest length of a frame
         raise RuntimeError("Command timed out: " + str(message))
 
-
     def is_started(self):
-        message = {"action": "is_started"}
+        """
+        Determines whether the game has begun
+        """
+        message = dict(self.adapter_templates["is_started"])
         try:
-            response = self.send_and_receive(message)
+            response = self.adapter_command(message)
         except RuntimeError as e:
             return False
         return bool(response)
 
     def command_build(self, parameters):
-        obj = parameters['createdThing']['objectDescriptor']
-        message = {
-            "action": "build",
-            "unit_type": obj['type'],
-            "count": int(obj['quantity']['amount']['value']) if obj['number'] == "plural" else 1
-        }
-        response = self.send_and_receive(message)
-        if "remaining" in response and int(response["remaining"]) > 0.0:
-                if obj['number'] == "plural":
-                    obj['quantity']['amount']['value'] = int(response["remaining"])
-                raise RuntimeWarning("Not able to build them all")
+        """
+        Tells the game to build an object
+        """
+        message = dict(self.adapter_templates["build"])
+        obj = parameters['createdThing']['objectDescriptor'] #shouldn't this just be 'descriptor'?
+        message["quantity"] = self.get_quantity(obj)
+        message["unit_type"] = self.get_type(obj)
 
+        response = self.adapter_command(message)
+        if response["status"] == "failed":
+            remaining = int(response["remaining"])
+            if obj['number'] == "plural":
+                obj['quantity']['amount']['value'] = remaining
+            raise RuntimeWarning("Not able to build all units. %d units remaining" %remaining)
+
+    def command_gather(self, parameters):
+        """
+        Tells the game to build an object
+        """
+        message = dict(self.adapter_templates["gather"])
+        obj = parameters['resource']['objectDescriptor'] #shouldn't this just be 'descriptor'?
+        message["resource_type"] = self.get_type(obj)
+
+        response = self.adapter_command(message)
+        if response["status"] == "failed":
+            raise RuntimeWarning("Not able to gather %s" %message["resource_type"])
+
+
+    def get_quantity(self, objectDescriptor):
+        if objectDescriptor['number'] == "plural":
+            return int(objectDescriptor['quantity']['amount']['value'])
+        return 1
+
+    def get_type(self, objectDescriptor):
+        return objectDescriptor['type']
 
     def solve_serial(self, parameters, predicate):
+        """
+        Solves a serial event
+        """
         self.route_action(parameters['process1'], predicate)
         self.route_action(parameters['process2'], predicate)
 
-    def solve_command(self, ntuple):
-        parameters = ntuple['eventDescriptor']
+    def solve_command(self, actspec):
+        """
+        Solves a command
+        """
+        parameters = actspec['eventDescriptor']
         self.route_event(parameters, "command")
+
+    def validate_message(self, message):
+        template = self.adapter_templates[message["action"]]
+
+        for k, v in template.items():
+            if k == "action":
+                pass
+            elif v == "INTEGER" and isinstance(message[k], int):
+                pass
+            elif v == "STRING" and isinstance(message[k], str):
+                pass
+            else:
+                raise RuntimeError("Invalid message: %s" %message)
 
 
 if __name__ == "__main__":
     solver = BasicStarcraftProblemSolver(sys.argv[1:])
+    solver.keep_alive(solver.solve)

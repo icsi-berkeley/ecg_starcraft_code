@@ -34,8 +34,7 @@ class TransportBridge
 public:
   // Use port=8856 for debugging and 7417 for production.
   // The constructor handles joining myname (so that the bridge will send SHOUTs here if they're directed to myname).
-  //TransportBridge(const char* myname = "StarCraft", const char* bridge_host = "ec2-54-153-1-22.us-west-1.compute.amazonaws.com", int bridge_port = 7417);
-  TransportBridge(const char* myname = "StarCraft", const char* bridge_host = "ec2-54-68-147-210.us-west-2.compute.amazonaws.com", int bridge_port = 7417);
+  TransportBridge(const char* myname = "StarCraft", const char* bridge_host = "ec2-34-206-218-71.compute-1.amazonaws.com", int bridge_port = 7417);
   ~TransportBridge();
 
   // Instead of throwing exception, TransportBridge methods call bridge_error()

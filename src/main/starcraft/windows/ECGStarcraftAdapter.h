@@ -7,7 +7,7 @@
 
 // Remember not to use "Broodwar" in any global class constructor!
 
-class ExampleAIModule : public BWAPI::AIModule
+class ECGStarcraftAdapter : public BWAPI::AIModule
 {
 public:
   // Virtual functions for callbacks, leave these as they are.
@@ -39,8 +39,11 @@ private:
 
   bool readMessage();
   bool sendMessage();
-  bool ExampleAIModule::setResponse(const std::string key, const std::string value);
-  bool ExampleAIModule::setResponse(const std::string key, const int value);
+  bool ECGStarcraftAdapter::setResponse(const std::string key, const std::string value);
+  bool ECGStarcraftAdapter::setResponse(const std::string key, const int value);
+  bool ECGStarcraftAdapter::build(const BWAPI::UnitType unitType, int count);
+  bool ECGStarcraftAdapter::gather(const BWAPI::UnitType resourceType);
+  BWAPI::UnitType ECGStarcraftAdapter::getUnitType(const std::string unitName);
 /*
   bool validateUnit(Unit unit);
   bool buildUnit(string type, unit actors);

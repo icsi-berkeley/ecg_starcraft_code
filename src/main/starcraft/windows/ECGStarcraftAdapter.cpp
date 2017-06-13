@@ -1,4 +1,4 @@
-#include "ExampleAIModule.h"
+#include "ECGStarcraftAdapter.h"
 #include <iostream>
 #include <sstream>
 
@@ -14,7 +14,7 @@
 using namespace BWAPI;
 using namespace Filter;
 
-void ExampleAIModule::onStart() {
+void ECGStarcraftAdapter::onStart() {
   int iResult;
   WSADATA wsaData;
 
@@ -43,54 +43,18 @@ void ExampleAIModule::onStart() {
 
 }
 
-void ExampleAIModule::onEnd(bool isWinner) {}
+void ECGStarcraftAdapter::onEnd(bool isWinner) {}
 
-void ExampleAIModule::onFrame() {
+void ECGStarcraftAdapter::onFrame() {
   if (readMessage()) {
-    if (!strcmp((*ntuple)["action"].GetString(), "is_started")) {
+    if (strcmp((*ntuple)["action"].GetString(), "is_started") == 0) {
       setResponse("status", "success");
     }
-    else if (!strcmp((*ntuple)["action"].GetString(), "build")) {
-      int count = (*ntuple)["count"].GetInt();
-      Broodwar->sendText("count: %d", count);
-      int minerals = Broodwar->self()->minerals();
-      bool success = false;
-      for (auto &u : Broodwar->self()->getUnits()) {
-        if (!strcmp((*ntuple)["unit_type"].GetString(), "barracks")) {
-          if (u->getType().isWorker()) {
-            TilePosition targetBuildLocation = Broodwar->getBuildLocation(UnitTypes::Terran_Barracks, u->getTilePosition());
-            if (targetBuildLocation) {
-              if (minerals > UnitTypes::Terran_Barracks.mineralPrice() && Broodwar->canMake(UnitTypes::Terran_Barracks, u) && u->build(UnitTypes::Terran_Barracks, targetBuildLocation)) {
-                Broodwar->sendText("CAN BUILD BARRACKS");
-                minerals = minerals - UnitTypes::Terran_Barracks.mineralPrice();
-                count--;
-                if (count <= 0.0) {
-                  setResponse("status", "success");
-                  setResponse("remaining", count);
-                  success = true;
-                  break;
-                }
-              }
-            }
-          }
-        }
-        else if (!strcmp((*ntuple)["unit_type"].GetString(), "grunt")) {
-          if (Broodwar->canMake(UnitTypes::Terran_Marine, u) && u->train(UnitTypes::Terran_Marine)) {
-            Broodwar->sendText("CAN BUILD MARINE");
-            count--;
-            if (count <= 0.0) {
-              setResponse("status", "success");
-              setResponse("remaining", count);
-              success = true;
-              break;
-            }
-          }
-        }
-      }
-      if (!success) {
-        setResponse("status", "failed");
-        setResponse("remaining", count);
-      }
+    else if (strcmp((*ntuple)["action"].GetString(), "build") == 0) {
+      build(getUnitType((*ntuple)["unit_type"].GetString()), (*ntuple)["quantity"].GetInt());
+    }
+    else if (strcmp((*ntuple)["action"].GetString(), "gather") == 0) {
+      gather(getUnitType((*ntuple)["resource_type"].GetString()));
     }
 
     sendMessage();
@@ -137,6 +101,7 @@ void ExampleAIModule::onFrame() {
       // if our worker is idle
       if ( u->isIdle() )
       {
+        continue; // TODO: Added to disable the automatic assignment of idle workers
         // Order workers carrying a resource to return them to the center,
         // otherwise find a mineral patch to harvest.
         if ( u->isCarryingGas() || u->isCarryingMinerals() )
@@ -158,7 +123,7 @@ void ExampleAIModule::onFrame() {
   } // closure: unit iterator
 }
 
-void ExampleAIModule::onSendText(std::string text) {
+void ECGStarcraftAdapter::onSendText(std::string text) {
   // Send the text to the game if it is not being processed.
   Broodwar->sendText("%s", text.c_str());
 
@@ -166,50 +131,55 @@ void ExampleAIModule::onSendText(std::string text) {
   // otherwise you may run into problems when you use the %(percent) character!
 }
 
-void ExampleAIModule::onReceiveText(BWAPI::Player player, std::string text) {
+void ECGStarcraftAdapter::onReceiveText(BWAPI::Player player, std::string text) {
   // Parse the received text
   Broodwar << player->getName() << " said \"" << text << "\"" << std::endl;
 }
 
-void ExampleAIModule::onPlayerLeft(BWAPI::Player player) {
+void ECGStarcraftAdapter::onPlayerLeft(BWAPI::Player player) {
   // Interact verbally with the other players in the game by
   // announcing that the other player has left.
   Broodwar->sendText("Goodbye %s!", player->getName().c_str());
 }
 
-void ExampleAIModule::onNukeDetect(BWAPI::Position target) {}
+void ECGStarcraftAdapter::onNukeDetect(BWAPI::Position target) {}
 
-void ExampleAIModule::onUnitDiscover(BWAPI::Unit unit) {}
+void ECGStarcraftAdapter::onUnitDiscover(BWAPI::Unit unit) {}
 
-void ExampleAIModule::onUnitEvade(BWAPI::Unit unit) {}
+void ECGStarcraftAdapter::onUnitEvade(BWAPI::Unit unit) {}
 
-void ExampleAIModule::onUnitShow(BWAPI::Unit unit) {}
+void ECGStarcraftAdapter::onUnitShow(BWAPI::Unit unit) {}
 
-void ExampleAIModule::onUnitHide(BWAPI::Unit unit) {}
+void ECGStarcraftAdapter::onUnitHide(BWAPI::Unit unit) {}
 
-void ExampleAIModule::onUnitCreate(BWAPI::Unit unit) {}
+void ECGStarcraftAdapter::onUnitCreate(BWAPI::Unit unit) {}
 
-void ExampleAIModule::onUnitDestroy(BWAPI::Unit unit) {}
+void ECGStarcraftAdapter::onUnitDestroy(BWAPI::Unit unit) {}
 
-void ExampleAIModule::onUnitMorph(BWAPI::Unit unit) {}
+void ECGStarcraftAdapter::onUnitMorph(BWAPI::Unit unit) {}
 
-void ExampleAIModule::onUnitRenegade(BWAPI::Unit unit) {}
+void ECGStarcraftAdapter::onUnitRenegade(BWAPI::Unit unit) {}
 
-void ExampleAIModule::onSaveGame(std::string gameName) {
+void ECGStarcraftAdapter::onSaveGame(std::string gameName) {
   Broodwar << "The game was saved to \"" << gameName << "\"" << std::endl;
 }
 
-void ExampleAIModule::onUnitComplete(BWAPI::Unit unit) {}
+void ECGStarcraftAdapter::onUnitComplete(BWAPI::Unit unit) {}
 
-bool ExampleAIModule::readMessage() {
+bool ECGStarcraftAdapter::readMessage() {
   if (bridge->data_available()) {
     bridge->recv_json(message);
 
-    // Printing the message
-    if ((size_t)message->Capacity() > 3) Broodwar->sendText((*message)[3].GetString());
-
     // Check if it's for me
     if (!strcmp((*message)[0].GetString(), "SHOUT") && !strcmp((*message)[2].GetString(), "StarCraft")) {
+
+      // Printing the message
+      if ((size_t)message->Capacity() > 3) {
+        Broodwar->sendText((*message)[1].GetString());
+        Broodwar->sendText((*message)[2].GetString());
+        Broodwar->sendText((*message)[3].GetString());
+      }
+
       ntuple->Parse((*message)[3].GetString());
       response->Clear(); // Clear the previous response
       responseWriter->StartArray();
@@ -217,15 +187,13 @@ bool ExampleAIModule::readMessage() {
       responseWriter->String("StarCraft");
       responseWriter->String((*message)[1].GetString());
       responseWriter->StartObject();
-      responseWriter->Key("head");
-      responseWriter->String((*ntuple)["response_head"].GetString());
       return true;
     }
   }
   return false;
 }
 
-bool ExampleAIModule::sendMessage() {
+bool ECGStarcraftAdapter::sendMessage() {
   responseWriter->EndObject();
   responseWriter->EndArray();
 
@@ -234,14 +202,116 @@ bool ExampleAIModule::sendMessage() {
   return true;
 }
 
-bool ExampleAIModule::setResponse(const std::string key, const std::string value) {
+bool ECGStarcraftAdapter::setResponse(const std::string key, const std::string value) {
   responseWriter->Key(key.c_str());
   responseWriter->String(value.c_str());
   return true;
 }
 
-bool ExampleAIModule::setResponse(const std::string key, const int value) {
+bool ECGStarcraftAdapter::setResponse(const std::string key, const int value) {
   responseWriter->Key(key.c_str());
   responseWriter->Int(value);
   return true;
+}
+
+bool ECGStarcraftAdapter::build(BWAPI::UnitType unitType, int count) {
+  int minerals = Broodwar->self()->minerals();
+  for (auto &u : Broodwar->self()->getUnits()) {
+    if ( !u->exists() )
+      continue;
+
+    if (Broodwar->canMake(unitType, u) && Broodwar->self()->minerals() > unitType.mineralPrice()) {
+      if (unitType.isBuilding()) {
+        TilePosition targetBuildLocation = Broodwar->getBuildLocation(unitType, u->getTilePosition());
+        if (u->build(unitType, targetBuildLocation)) {
+          --count;
+          break;
+        }
+      } else {
+        if (Broodwar->self()->supplyTotal() - Broodwar->self()->supplyUsed() >= unitType.supplyRequired() &&
+            u->getTrainingQueue().size() < 5 && u->train(unitType)) {
+          --count;
+          break;
+        }
+      }
+    }
+  }
+
+  if (count > 0) {
+    setResponse("status", "failed");
+    setResponse("remaining", count);
+    return false;
+  } else {
+    setResponse("status", "success");
+    return true;
+  }
+}
+
+bool ECGStarcraftAdapter::gather(BWAPI::UnitType resourceType) {
+  bool ordered = false;
+
+  // Check first for idle workers and make them ALL gather the resource
+  for (auto &u : Broodwar->self()->getUnits()) {
+    if (!u->exists())
+      continue;
+
+    if (u->getType().isWorker()) {
+      if (u->isIdle() && !u->isGatheringGas() && !u->isGatheringMinerals()) {
+
+        if (resourceType == UnitTypes::Resource_Mineral_Field) {
+          if (u->gather(u->getClosestUnit(IsMineralField)))
+            ordered = true;
+        } else if (resourceType == UnitTypes::Resource_Vespene_Geyser) {
+          if (u->gather(u->getClosestUnit(IsRefinery)))
+            ordered = true;
+        }
+
+      }
+    }
+  }
+
+  if (ordered) {
+    setResponse("status", "success");
+    return true;
+  }
+
+  // Check for a worker gathering a different resource and make one gather the chosen resource
+  for (auto &u : Broodwar->self()->getUnits()) {
+    if ( !u->exists() )
+      continue;
+
+    if ( u->getType().isWorker() ) {
+      if (resourceType == UnitTypes::Resource_Mineral_Field && u->isGatheringGas()) {
+        if (u->gather(u->getClosestUnit(IsMineralField)))
+          ordered = true;
+      } else if (resourceType == UnitTypes::Resource_Vespene_Geyser && u->isGatheringMinerals()) {
+        if (u->gather(u->getClosestUnit(IsRefinery)))
+          ordered = true;
+      }
+    }
+
+    if (ordered) {
+      setResponse("status", "success");
+      return true;
+    }
+  }
+
+  setResponse("status", "failed");
+  return false;
+}
+
+BWAPI::UnitType ECGStarcraftAdapter::getUnitType(const std::string unitName) {
+  if (!unitName.compare("barracks")) {
+    return UnitTypes::Terran_Barracks;
+  } else if (!unitName.compare("refinery")) {
+    return UnitTypes::Terran_Refinery;
+  } else if (!unitName.compare("marine")) {
+    return UnitTypes::Terran_Marine;
+  } else if (!unitName.compare("scv")) {
+    return UnitTypes::Terran_SCV;
+  } else if (!unitName.compare("mineral")) {
+    return UnitTypes::Resource_Mineral_Field;
+  } else if (!unitName.compare("gas")) {
+    return UnitTypes::Resource_Vespene_Geyser;
+  }
 }

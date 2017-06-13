@@ -197,6 +197,18 @@
       "p_features": {
         "descriptor": "processFeatures"
       }
+    },
+    "GatherResource": {
+      "protagonist": {
+        "descriptor": "objectDescriptor"
+      },
+      "resource": {
+        "descriptor": "objectDescriptor"
+      },
+      "actionary": "actionary",
+      "p_features": {
+        "descriptor": "processFeatures"
+      }
     }
   }
 }

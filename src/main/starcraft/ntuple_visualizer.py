@@ -27,8 +27,10 @@ while True:
             for fs in semspecs:
                 try:
                     ntuple = rs.specialize(fs)
-                    pprint(ntuple)
-                    decoder.pprint_ntuple(ntuple)
+                    import pprint
+                    pprint.pprint(ntuple)
+                    #pprint(ntuple)
+                    #decoder.pprint_ntuple(ntuple)
                     break
                 except Exception as e:
                     traceback.print_exc()
