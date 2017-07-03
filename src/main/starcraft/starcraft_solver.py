@@ -25,17 +25,21 @@ dir_name = os.path.dirname(os.path.realpath(__file__))
 class BasicStarcraftProblemSolver(CoreProblemSolver):
     def __init__(self, args):
         CoreProblemSolver.__init__(self, args)
-        self.headings = dict(north=(0.0, 1.0, 0.0), south=(0.0, -1.0, 0.0),
-                    east=(1.0, 0.0, 0.0), west=(-1.0, 0.0, 0.0))
 
         self._inputs = []
-        self._lock = Lock()
         self._game_started = False
         self._verbose = True
 
-        self._response = None
+        self._response = {}
+        self._self_state = None
+        self._enemy_state = None
+
+        self._previous_response = None
+        self._previous_self_state = None
+        self._previous_enemy_state = None
+
         self.adapter_address = "StarCraft"
-        self.transport.subscribe(self.adapter_address, self.adapter_callback)
+        self.transport.subscribe(self.adapter_address, self.adapter_request)
         self.adapter_templates = self.read_templates(
             os.path.join(dir_name, "adapter_templates.json"))
 
@@ -58,32 +62,49 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
             pprint(actspec)
         if self.is_quit(actspec):
             return self.close()
-        with self._lock:
-            self._inputs.append(actspec)
+        self._inputs.append(actspec)
 
-    def adapter_callback(self, response):
+    def adapter_request(self, request):
         """
-        Called asychronously when a response is sent from the game. Adds it to a
-        queue of game responses.
+        Called asychronously when a request is sent from the game.
         """
         if self._verbose:
-            print("Recieved adapter response:")
+            if not self._game_started:
+                self._game_started = True
+                print("Connected to StarCraft game")
+
+            print("Recieved adapter request")
+            # pprint(request)
+
+        self._self_state = request['self']
+        self._enemy_state = request['enemy']
+        self.solve()
+        self.adapter_response()
+
+    def adapter_response(self):
+        """
+        Responds to the adapter request
+        """
+        response = self._response
+        # Record prevoius state to allow diff-ing
+        self._response, self._previous_response = {}, response
+        self._previous_self_state, self._previous_enemy_state = self._self_state, self._enemy_state
+
+        self.transport.send(self.adapter_address, json.dumps(response))
+
+        if self._verbose:
+            print("Sent to adapter:")
             pprint(response)
-        with self._lock:
-            self._response = response
 
     def solve(self):
         """
         Checks the input queue and inserts any pending inputs to the conditions data structure.
         Executes conditions once all inputs have been processed.
+        1. Determines build order paired with builder/none
+        2. Assigns workers to jobs
+        3. Organizes combat units into squads with orders
+        4. Labels units and groups
         """
-        if not self._game_started:
-            self._game_started = self.is_started()
-            if self._game_started and self._verbose:
-                print("Connected to StarCraft game")
-            else:
-                return
-
         completed = []
         for index, actspec in enumerate(self._inputs):
             predicate_type = actspec['predicate_type']
@@ -102,29 +123,6 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
                 completed.insert(0, index)
         for index in completed:
             del self._inputs[index]
-
-    def adapter_command(self, message, timeout=5):
-        """
-        Sends message to the adapter and waits for a response
-        """
-        self.validate_message(message)
-
-        send_time = time.time()
-        self._response = None
-        self.transport.send(self.adapter_address, json.dumps(message))
-
-        if self._verbose:
-            print("Sent to adapter:")
-            pprint(message)
-
-        while time.time() - send_time <= timeout:
-            if self._response:
-                if self._verbose:
-                    print("received:")
-                    pprint(self._response)
-                return self._response
-            time.sleep(1.0 / 24.0) # Shortest length of a frame
-        raise RuntimeError("Command timed out: " + str(message))
 
     def is_started(self):
         """
@@ -204,4 +202,4 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
 
 if __name__ == "__main__":
     solver = BasicStarcraftProblemSolver(sys.argv[1:])
-    solver.keep_alive(solver.solve)
+    # solver.keep_alive(solver.solve)

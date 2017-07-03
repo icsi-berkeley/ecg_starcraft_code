@@ -1,11 +1,10 @@
 #pragma once
 #include <BWAPI.h>
-#include "rapidjson/document.h"
-#include "rapidjson/writer.h"
-#include "rapidjson/stringbuffer.h"
-#include "TransportBridge.h"
 
 // Remember not to use "Broodwar" in any global class constructor!
+
+namespace ECGBot
+{
 
 class ECGStarcraftAdapter : public BWAPI::AIModule
 {
@@ -30,23 +29,10 @@ public:
   virtual void onUnitComplete(BWAPI::Unit unit);
   // Everything below this line is safe to modify.
 private:
-  TransportBridge* bridge;
-  rapidjson::Document* message;
-  rapidjson::Document* ntuple;
-  rapidjson::StringBuffer* response;
-  rapidjson::Writer<rapidjson::StringBuffer>* responseWriter;
-  bool isDataSet = false;
 
-  bool readMessage();
-  bool sendMessage();
-  bool ECGStarcraftAdapter::setResponse(const std::string key, const std::string value);
-  bool ECGStarcraftAdapter::setResponse(const std::string key, const int value);
-  bool ECGStarcraftAdapter::build(const BWAPI::UnitType unitType, int count);
-  bool ECGStarcraftAdapter::gather(const BWAPI::UnitType resourceType);
-  BWAPI::UnitType ECGStarcraftAdapter::getUnitType(const std::string unitName);
-/*
-  bool validateUnit(Unit unit);
-  bool buildUnit(string type, unit actors);
-  int buildUnits(string type, count, unit actors);
-*/
+  bool build(const BWAPI::UnitType unitType, int count);
+  bool gather(const BWAPI::UnitType resourceType);
+
 };
+
+}
