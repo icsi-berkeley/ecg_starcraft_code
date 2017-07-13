@@ -30,21 +30,19 @@ void MessageManager::initializeTransport()
   requestWriter = new rapidjson::Writer<rapidjson::StringBuffer>(*request);
 }
 
-
-void MessageManager::sendRequest()
+void MessageManager::beginMessage()
 {
-  request->Clear(); // Clear the previous request
+	request->Clear(); // Clear the previous request
 
   requestWriter->StartArray();
   requestWriter->String("SHOUT"); // Type of message
   requestWriter->String("StarCraft"); // Source of message
   requestWriter->String("FED1_ProblemSolver"); // Destination of message
   requestWriter->StartObject();
+}
 
-  // Populate the object
-  UAlbertaBot::InformationManager::Instance().update();
-  serializeInformation();
-
+void MessageManager::sendMessage()
+{
   requestWriter->EndObject();
   requestWriter->EndArray();
 
@@ -52,9 +50,9 @@ void MessageManager::sendRequest()
   bridge->send_string(request->GetString());
 }
 
-bool MessageManager::readResponse()
+bool MessageManager::readMessage()
 {
-  if (bridge->data_available((long) 0.05))
+  if (bridge->data_available((long) 0.02))
   {
     bridge->recv_json(message);
 
@@ -77,141 +75,45 @@ bool MessageManager::readResponse()
   return false;
 }
 
-void MessageManager::serializeInformation()
+bool MessageManager::isStarted()
 {
-	BWAPI::Player self = BWAPI::Broodwar->self();
-	BWAPI::Player enemy = BWAPI::Broodwar->enemy();
-
-	requestWriter->Key("self");
-	serializePlayer(self);
-
-	requestWriter->Key("enemy");
-	serializePlayer(enemy);
+	return strcmp((*response)["type"].GetString(), "is_started") == 0;
 }
 
-void MessageManager::serializePlayer(BWAPI::Player player)
+bool MessageManager::isConditional()
 {
-	requestWriter->StartObject();
-	requestWriter->Key("units");
-	serializeUnits(player);
-
-	requestWriter->Key("base");
-	serializeBaseLocation(player);
-
-	requestWriter->Key("resources");
-	serializeResources(player);
-	requestWriter->EndObject();
+	return strcmp((*response)["type"].GetString(), "conditional") == 0;
 }
 
-void MessageManager::serializeUnits(BWAPI::Player player)
+bool MessageManager::isSequential()
 {
-	requestWriter->StartArray();
-	for (const auto & unitIter : UAlbertaBot::InformationManager::Instance().getUnitInfo(player))
-	{
-		requestWriter->StartObject();
-		const UAlbertaBot::UnitInfo & unitInfo = unitIter.second;
-
-		requestWriter->Key("id");
-		requestWriter->Int(unitInfo.unitID);
-
-		requestWriter->Key("type");
-		requestWriter->String(ECGUtil::getUnitName(unitInfo.type).c_str());
-
-		requestWriter->Key("completed");
-		requestWriter->Bool(unitInfo.completed);
-
-		requestWriter->Key("health");
-		requestWriter->Int(unitInfo.lastHealth);
-
-		requestWriter->Key("shields");
-		requestWriter->Int(unitInfo.lastShields);
-
-		requestWriter->Key("positionX");
-		requestWriter->Int(unitInfo.lastPosition.x);
-
-		requestWriter->Key("positionY");
-		requestWriter->Int(unitInfo.lastPosition.y);
-
-		requestWriter->EndObject();
-	}
-	requestWriter->EndArray();
+	return strcmp((*response)["type"].GetString(), "sequential") == 0;
 }
 
-void MessageManager::serializeBaseLocation(BWAPI::Player player)
+bool MessageManager::isAction()
 {
-	requestWriter->StartObject();
-	BWTA::BaseLocation* base = UAlbertaBot::InformationManager::Instance().getMainBaseLocation(player);
-	requestWriter->Key("positionX");
-	requestWriter->Int(base->getPosition().x);
-
-	requestWriter->Key("positionY");
-	requestWriter->Int(base->getPosition().y);
-
-	requestWriter->Key("numAvailableMinerals");
-	requestWriter->Int(base->minerals());
-
-	requestWriter->Key("numAvilableGas");
-	requestWriter->Int(base->gas());
-
-	requestWriter->Key("availableMinerals");
-	requestWriter->StartArray();
-	for (BWAPI::Unitset::iterator iter = base->getMinerals().begin(); iter != base->getMinerals().end(); iter++)
-	{
-		requestWriter->StartObject();
-		requestWriter->Key("id");
-		requestWriter->Int((*iter)->getID());
-
-		requestWriter->Key("positionX");
-		requestWriter->Int((*iter)->getInitialPosition().x);
-
-		requestWriter->Key("positionY");
-		requestWriter->Int((*iter)->getInitialPosition().y);
-
-		requestWriter->Key("remaining");
-		requestWriter->Int((*iter)->getResources());
-		requestWriter->EndObject();
-	}
-	requestWriter->EndArray();
-
-	requestWriter->Key("availableGas");
-	requestWriter->StartArray();
-	for (BWAPI::Unitset::iterator iter = base->getGeysers().begin(); iter != base->getGeysers().end(); iter++)
-	{
-		requestWriter->StartObject();
-		requestWriter->Key("id");
-		requestWriter->Int((*iter)->getID());
-
-		requestWriter->Key("positionX");
-		requestWriter->Int((*iter)->getInitialPosition().x);
-
-		requestWriter->Key("positionY");
-		requestWriter->Int((*iter)->getInitialPosition().y);
-
-		requestWriter->Key("remaining");
-		requestWriter->Int((*iter)->getResources());
-		requestWriter->EndObject();
-	}
-	requestWriter->EndArray();
-
-	requestWriter->EndObject();
+	return !isConditional() && !isSequential();
 }
-// void serializeOccupiedRegions();
 
-void MessageManager::serializeResources(BWAPI::Player player) {
-	requestWriter->StartObject();
-	requestWriter->Key("unitCount");
-	requestWriter->Int(player->allUnitCount());
+const char* MessageManager::readType()
+{
+	return (*response)["action"].GetString();
+}
 
-	requestWriter->Key("minerals");
-	requestWriter->Int(player->minerals());
+BWAPI::UnitType MessageManager::readUnitType()
+{
+	return ECGUtil::getUnitType((*response)["unit_type"].GetString());
+}
 
-	requestWriter->Key("gas");
-	requestWriter->Int(player->gas());
+int MessageManager::readQuantity()
+{
+	return (*response)["quantity"].GetInt();
+}
 
-	requestWriter->Key("supplyUsed");
-	requestWriter->Int(player->supplyUsed());
-
-	requestWriter->Key("supplyTotal");
-	requestWriter->Int(player->supplyTotal());
-	requestWriter->EndObject();
+void MessageManager::sendStarted()
+{
+	beginMessage();
+	requestWriter->Key("is_started");
+	requestWriter->Bool(true);
+	sendMessage();
 }

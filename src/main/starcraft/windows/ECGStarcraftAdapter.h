@@ -30,9 +30,6 @@ public:
   // Everything below this line is safe to modify.
 private:
 
-  bool build(const BWAPI::UnitType unitType, int count);
-  bool gather(const BWAPI::UnitType resourceType);
-
 };
 
 }

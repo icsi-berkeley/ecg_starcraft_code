@@ -8,6 +8,25 @@
 namespace ECGBot
 {
 
+enum UnitsStatus {IDLE, ATTACKING, DEFENDING, GATHERING, EXPLORING, HARASSING, BUILDING, NA};
+enum LocationPosition {EXACT, NEAR, FAR, RIGHT, LEFT, BACK, FRONT};
+
+struct Location;
+
+struct Units {
+  int quantity;
+  int unitID;
+  BWAPI::UnitType unitType;
+  int unitIdentifier; // Not sure this is needed. Used to identify a unit which does not have an ID yet
+  Location location;
+  UnitsStatus status;
+};
+
+struct Location {
+  Units landmark;
+  LocationPosition position;
+}
+
 class MessageManager
 {
     MessageManager();
@@ -25,15 +44,20 @@ public:
     // singletons
     static MessageManager & Instance();
 
-    void          sendRequest();
-    bool          readResponse();
+    void              beginMessage();
+    void              sendMessage();
+    bool              readMessage();
 
-    void          serializeInformation();
-	void          serializePlayer(BWAPI::Player player);
-	void          serializeUnits(BWAPI::Player player);
-    void          serializeBaseLocation(BWAPI::Player player);
-    void          serializeOccupiedRegions();
-    void          serializeResources(BWAPI::Player player);
+    bool              isStarted();
+    bool              isConditional();
+    bool              isSequential();
+    bool              isAction();
+
+    const char*		    readType();
+    BWAPI::UnitType   readUnitType();
+    int               readQuantity();
+
+    void              sendStarted();
 
 };
 }

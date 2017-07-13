@@ -26,20 +26,12 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
     def __init__(self, args):
         CoreProblemSolver.__init__(self, args)
 
-        self._inputs = []
-        self._game_started = False
+        self.inputs = []
+        self.game_started = False
         self._verbose = True
 
-        self._response = {}
-        self._self_state = None
-        self._enemy_state = None
-
-        self._previous_response = None
-        self._previous_self_state = None
-        self._previous_enemy_state = None
-
         self.adapter_address = "StarCraft"
-        self.transport.subscribe(self.adapter_address, self.adapter_request)
+        self.transport.subscribe(self.adapter_address, self.adapter_callback)
         self.adapter_templates = self.read_templates(
             os.path.join(dir_name, "adapter_templates.json"))
 
@@ -54,59 +46,64 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
 
     def callback(self, actspec):
         """
-        Called asychronously when an actspec is available from the specializer. Adds it to a
-        queue of inputs.
+        Called asychronously when an actspec is available from the specializer. Relays it to the
+        Starcraft Adapter.
         """
         if self._verbose:
             print("Received ActSpec:")
             pprint(actspec)
         if self.is_quit(actspec):
             return self.close()
-        self._inputs.append(actspec)
 
-    def adapter_request(self, request):
+        self.inputs.append(actspec)
+        if self.game_started:
+            return self.solve()
+
+    def adapter_callback(self, request):
         """
         Called asychronously when a request is sent from the game.
         """
         if self._verbose:
-            if not self._game_started:
-                self._game_started = True
-                print("Connected to StarCraft game")
-
             print("Recieved adapter request")
-            # pprint(request)
+            pprint(request)
+        if "is_started" in request:
+            self.game_started = True
 
-        self._self_state = request['self']
-        self._enemy_state = request['enemy']
-        self.solve()
-        self.adapter_response()
-
-    def adapter_response(self):
+    def adapter_command(self, command):
         """
-        Responds to the adapter request
+        Sends a command to the adapter
         """
-        response = self._response
-        # Record prevoius state to allow diff-ing
-        self._response, self._previous_response = {}, response
-        self._previous_self_state, self._previous_enemy_state = self._self_state, self._enemy_state
-
-        self.transport.send(self.adapter_address, json.dumps(response))
+        self.validate_message(command)
+        self.transport.send(self.adapter_address, json.dumps(command))
 
         if self._verbose:
             print("Sent to adapter:")
-            pprint(response)
+            pprint(command)
+
+    def adapter_connect(self, timeout=5):
+        """
+        Connect to adapter before beginning sending messages
+        """
+        while not self.game_started:
+            if self._verbose:
+                print("Attempting to connect to Starcraft...")
+
+            message = dict(self.adapter_templates["is_started"])
+
+            send_time = time.time()
+            self.adapter_command(message)
+
+            while time.time() - send_time <= timeout:
+                time.sleep(1.0 / 24.0) # Shortest length of a frame
+                if self.game_started:
+                    return self.solve()
 
     def solve(self):
         """
-        Checks the input queue and inserts any pending inputs to the conditions data structure.
-        Executes conditions once all inputs have been processed.
-        1. Determines build order paired with builder/none
-        2. Assigns workers to jobs
-        3. Organizes combat units into squads with orders
-        4. Labels units and groups
+        Relays all pendings inputs to the correct functions to send to starcraft adapter.
         """
         completed = []
-        for index, actspec in enumerate(self._inputs):
+        for index, actspec in enumerate(self.inputs):
             predicate_type = actspec['predicate_type']
             try:
                 dispatch = getattr(self, "solve_%s" %predicate_type)
@@ -122,18 +119,7 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
                 traceback.print_exc()
                 completed.insert(0, index)
         for index in completed:
-            del self._inputs[index]
-
-    def is_started(self):
-        """
-        Determines whether the game has begun
-        """
-        message = dict(self.adapter_templates["is_started"])
-        try:
-            response = self.adapter_command(message)
-        except RuntimeError as e:
-            return False
-        return bool(response)
+            del self.inputs[index]
 
     def command_build(self, parameters):
         """
@@ -144,12 +130,7 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
         message["quantity"] = self.get_quantity(obj)
         message["unit_type"] = self.get_type(obj)
 
-        response = self.adapter_command(message)
-        if response["status"] == "failed":
-            remaining = int(response["remaining"])
-            if obj['number'] == "plural":
-                obj['quantity']['amount']['value'] = remaining
-            raise RuntimeWarning("Not able to build all units. %d units remaining" %remaining)
+        self.adapter_command(message)
 
     def command_gather(self, parameters):
         """
@@ -157,12 +138,21 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
         """
         message = dict(self.adapter_templates["gather"])
         obj = parameters['resource']['objectDescriptor'] #shouldn't this just be 'descriptor'?
-        message["resource_type"] = self.get_type(obj)
+        message["unit_type"] = self.get_type(obj)
 
-        response = self.adapter_command(message)
-        if response["status"] == "failed":
-            raise RuntimeWarning("Not able to gather %s" %message["resource_type"])
+        self.adapter_command(message)
 
+    def command_defend(self, parameters):
+        raise NotImplementedError()
+
+    def command_attack(self, parameters):
+        raise NotImplementedError()
+
+    def command_harrass(self, parameters):
+        raise NotImplementedError()
+
+    def command_explore(self, parameters):
+        raise NotImplementedError()
 
     def get_quantity(self, objectDescriptor):
         if objectDescriptor['number'] == "plural":
@@ -187,19 +177,147 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
         self.route_event(parameters, "command")
 
     def validate_message(self, message):
-        template = self.adapter_templates[message["action"]]
+        template = self.adapter_templates[message["type"]]
+        if "parents" in template:
+            for parent_type in template["parents"]:
+                parent = self.adapter_templates[parent_type]
+                for k, v in parent.items():
+                    if k not in template:
+                        template[k] = v
 
         for k, v in template.items():
-            if k == "action":
+            if v[0] == "*":
+                if v == None:
+                    raise RuntimeError("Missing required field %s. Invalid message: %s" %(k, message))
+                v = v[1:]
+
+            if k == "type" or k == "parents":
                 pass
-            elif v == "INTEGER" and isinstance(message[k], int):
-                pass
-            elif v == "STRING" and isinstance(message[k], str):
-                pass
+            elif v == "INTEGER" and not (isinstance(message[k], int) or message[k] == None):
+                raise RuntimeError("Incorrect integer for %s. Invalid message: %s" %(k, message))
+            elif v == "STRING" and not (isinstance(message[k], str) or message[k] == None):
+                raise RuntimeError("Incorrect string for %s. Invalid message: %s" %(k, message))
+            elif v.startswith("MC"):
+                options = v.split(":")[1].split("|")
+                if message[k] not in options:
+                    raise RuntimeError("Incorrect MC for %s. Invalid message: %s" %(k, message))
+            elif v.startswith("OBJECT"):
+                if message[k] == None:
+                    continue
+                valid_types = v.split(":")[1].split("|")
+                object_types = [message[k]["type"], ]
+                if "parents" in message[k]:
+                    object_types += message[k]["parents"]
+
+                matches = [typ for typ in object_types if typ in valid_types]
+                if len(matches) == 0:
+                    raise RuntimeError("Incorrect object type for %s. Invalid message: %s" %(k, message))
+
+                self.validate_message(message[k])
             else:
-                raise RuntimeError("Invalid message: %s" %message)
+                pass
+
+
+    def temporary_hack(self):
+        while self._keep_alive:
+            choice = input(">")
+            message = None
+            if choice == "":
+                continue
+            elif choice == "q":
+                return exit()
+            elif choice == "2":
+                # "Mine the minerals!"
+                message = {
+                    "type": "gather",
+                    "parents": ["action"],
+                    "resource_type": "mineral",
+                    "commanded_unit": {
+                        "type": "units",
+                        "quantity": -1,
+                        "unit_name": None,
+                        "unit_type": "scv",
+                        "unit_identifier": 1,
+                        "location": None,
+                        "status": "IDLE"
+                    }
+                }
+            elif choice == "3":
+                # “Build SCVs until I have 8 of them!”
+                message = {
+                    "type": "condition",
+                    "trigger": "UNTIL",
+                    "event": {
+                        "type": "army",
+                        "parents": ["event"],
+                        "units": {
+                            "type": "units",
+                            "quantity": 8,
+                            "unit_name": None,
+                            "unit_type": "scv",
+                            "unit_identifier": None,
+                            "location": None,
+                            "status": "NA"
+                        }
+                    },
+                    "response": {
+                        "type": "build",
+                        "parents": ["action"],
+                        "units": {
+                            "type": "units",
+                            "quantity": 1,
+                            "unit_name": None,
+                            "unit_type": "scv",
+                            "unit_identifier": 1,
+                            "location": None,
+                            "status": "NA"
+                        },
+                        "location": None,
+                        "commanded_unit": None
+                    }
+                }
+            elif choice == "4":
+                # “Whenever a SCV is idle, make it mine minerals!”
+                message = {
+                    "type": "condition",
+                    "trigger": "IF",
+                    "event": {
+                        "type": "army",
+                        "parents": ["event"],
+                        "units": {
+                            "type": "units",
+                            "quantity": None,
+                            "unit_name": None,
+                            "unit_type": "scv",
+                            "unit_identifier": None,
+                            "location": None,
+                            "status": "IDLE"
+                        }
+                    },
+                    "response": {
+                        "type": "gather",
+                        "parents": ["action"],
+                        "resource_type": "*STRING",
+                        "commanded_unit": {
+                            "type": "units",
+                            "quantity": -1,
+                            "unit_name": None,
+                            "unit_type": "scv",
+                            "unit_identifier": 1,
+                            "location": None,
+                            "status": "IDLE"
+                        }
+                    }
+                }
+            else:
+                print("only choices 2, 3 and 4 are currently supported.")
+                pass
+
+            if message:
+                self.adapter_command(message)
 
 
 if __name__ == "__main__":
     solver = BasicStarcraftProblemSolver(sys.argv[1:])
-    # solver.keep_alive(solver.solve)
+    # solver.adapter_connect()
+    solver.temporary_hack()

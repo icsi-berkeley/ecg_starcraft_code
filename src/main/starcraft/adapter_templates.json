@@ -1,16 +1,84 @@
 {
   "templates": {
     "is_started": {
-      "action": "is_started"
+      "type": "is_started"
+    },
+    "condition": {
+      "type": "condition",
+      "trigger": "MC:ONCE|WHILE|UNTIL|IF",
+      "event": "*OBJECT:event",
+      "response": "*OBJECT:action|condition|sequential"
+    },
+    "sequential": {
+      "type": "sequential",
+      "first": "*OBJECT:action|condition|sequential",
+      "second": "*OBJECT:action|condition|sequential"
+    },
+    "action": {
+      "type": "action",
+      "commanded_unit": "OBJECT:unit_descriptor"
     },
     "build": {
-      "action": "build",
-      "unit_type": "STRING",
-      "quantity": "INTEGER"
+      "type": "build",
+      "parents": ["action"],
+      "quantity": "*INTEGER",
+      "unit_type": "*STRING",
+      "unit_identifier": "*INTEGER",
+      "location": "OBJECT:location_descriptor"
     },
     "gather": {
-      "action": "gather",
-      "resource_type": "STRING"
+      "type": "gather",
+      "parents": ["action"],
+      "resource_type": "*STRING"
+    },
+    "move": {
+      "type": "move",
+      "parents": ["action"],
+      "location": "*OBJECT:location_descriptor"
+    },
+    "attack": {
+      "type": "attack",
+      "parents": ["action"],
+      "target": "*OBJECT:location_descriptor|unit_descriptor"
+    },
+    "defend": {
+      "type": "defend",
+      "parents": ["action"],
+      "target": "*OBJECT:location_descriptor|unit_descriptor"
+    },
+    "event": {
+      "type": "event"
+    },
+    "army": {
+      "type": "army",
+      "parents": ["event"],
+      "unit_descriptor": "*OBJECT:unit_descriptor"
+    },
+    "resources": {
+      "type": "resources",
+      "parents": ["event"],
+      "resource_type": "MC:population|gas|minerals",
+      "value": "*INTEGER",
+      "comparator": "MC:GREATER|LESS|EQUAL"
+    },
+    "construction": {
+      "type": "construction",
+      "parents": ["event"],
+      "unit_descriptor": "*OBJECT:unit_descriptor"
+    },
+    "location_descriptor": {
+      "type": "location_descriptor",
+      "landmark": "*OBJECT:unit_descriptor",
+      "position": "MC:EXACT|NEAR|FAR|RIGHT|LEFT|BACK|FRONT"
+    },
+    "unit_descriptor": {
+      "type": "unit_descriptor",
+      "quantity": "INTEGER",
+      "unit_type": "STRING",
+      "unit_name": "STRING",
+      "unit_identifier": "INTEGER",
+      "location": "OBJECT:location_descriptor",
+      "status": "MC:IDLE|ATTACKING|DEFENDING|GATHERING|EXPLORING|HARASSING|BUILDING|NA"
     }
   }
 }
