@@ -9,6 +9,7 @@
 #include "BWTA.h"
 #include "ECGUtil.h"
 #include "MessageManager.h"
+#include "Message.h"
 #include "ECGStarcraftManager.h"
 #include "InformationManager.h"
 #include "MapGrid.h"
@@ -51,9 +52,9 @@ void ECGStarcraftAdapter::onFrame()
   // Called once every game frame
 
   // Display the game frame rate as text in the upper left area of the screen
-  BWAPI::Broodwar->drawTextScreen(20, 0,  "FPS: %d", BWAPI::Broodwar->getFPS() );
-  BWAPI::Broodwar->drawTextScreen(20, 20, "Average FPS: %f", BWAPI::Broodwar->getAverageFPS() );
-  BWAPI::Broodwar->drawTextScreen(20, 40, "APM: %f", BWAPI::Broodwar->getAPM() );
+  BWAPI::Broodwar->drawTextScreen(10, 10,  "FPS: %d", BWAPI::Broodwar->getFPS() );
+  BWAPI::Broodwar->drawTextScreen(10, 20, "Average FPS: %f", BWAPI::Broodwar->getAverageFPS() );
+  BWAPI::Broodwar->drawTextScreen(10, 30, "APM: %f", BWAPI::Broodwar->getAPM() );
 
   NameManager::Instance().draw();
 
@@ -67,30 +68,31 @@ void ECGStarcraftAdapter::onFrame()
     return;
 
   // MessageManager::Instance().sendRequest();
-  while (MessageManager::Instance().readMessage())
+  while (MessageManager::Instance().readIncoming())
   {
-    if (MessageManager::Instance().is_started())
+  	Message* currentMessage = MessageManager::Instance().current();
+  	if (currentMessage->isStarted())
     {
       MessageManager::Instance().sendStarted();
     }
-    else if (MessageManager::Instance().isConditional())
+  	else if (currentMessage->isConditional())
     {
       return; // TODO: Handle conditionals
     }
-    else if (MessageManager::Instance().isSequential())
+  	else if (currentMessage->isSequential())
     {
       return; // TODO: Handle sequentials
     }
-    else if (strcmp(MessageManager::Instance().readType(), "build") == 0)
+  	else if (strcmp(currentMessage->readType(), "build") == 0)
     {
-      BWAPI::UnitType unitType = MessageManager::Instance().readUnitType();
-      int quantity = MessageManager::Instance().readQuantity();
-      ECGStarcraftManager::build(unitType, quantity);
+      BWAPI::UnitType unitType = currentMessage->readUnitType();
+      int quantity = currentMessage->readQuantity();
+      ECGStarcraftManager::Instance().build(UnitDescriptor(), unitType, quantity);
     }
-    else if (strcmp(MessageManager::Instance().readType(), "gather") == 0)
+  	else if (strcmp(currentMessage->readType(), "gather") == 0)
     {
-      BWAPI::UnitType resourceType = MessageManager::Instance().readUnitType();
-      ECGStarcraftManager::gather(resourceType);
+      // TODO: It makes more sense to just pass the message
+      ECGStarcraftManager::Instance().gather(currentMessage->readCommandedUnit(), currentMessage->readResourceType());
     }
 
   }

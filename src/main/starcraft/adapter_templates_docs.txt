@@ -22,7 +22,7 @@ Action Templates:
 Inherit from the action template.
 
 build
-Required to specify which unit type to build, a quantity and a unit identifier. If the quantity is
+Required to specify which unit type to build, a quantity and a ecg identifier. If the quantity is
 x > 1, then it is assumed that the identifiers will be id, id + 1, id + 2....id + x - 1. Can
 optionally which unit should build it. For buildings can optionally specify the location of a
 building.
@@ -59,7 +59,7 @@ to X-1 less than the maximum population.
 
 construction
 A template for the event of having a completed constructing a certain unit. It is required to
-specify the units and will typically do so via the unit identifier.
+specify the units and will typically do so via the ecg identifier.
 
 
 Descriptor Templates:
@@ -71,10 +71,10 @@ landmark. If no landmark is given, then the user's mouse position will be used a
 
 units
 Required to specify one of the fields. The quantity determines how many of the specified class of
-units. A quantity of -1 means all units that match the class of units (could potentially be none).
-The unit name provides a unique identifier to a completed unit. The unit identifier provides a
-unique identification to a unit that is referred to elsewhere in the command. If the quantity is
-x > 1, then it is assumed that the identifiers will be id, id + 1, id + 2....id + x - 1.
-The identifier is assigned by the problem solver as needed. The location provides a location to find
-the units. The unit status provides the current action of the unit. If unknown then status is set to
-NA.
+units. A quantity of 0 means all units that match the class of units (could potentially be none).
+The unit name provides a unique identifier to a completed unit. The ecg identifier provides a
+unique identification to a unit that is referred to elsewhere in the command. A ecg identifier of 0
+means not set. If the quantity is x > 1, then it is assumed that the identifiers will be id, id + 1,
+id + 2....id + x - 1. The identifier is assigned by the problem solver as needed. The location
+provides a location to find the units. The unit status provides the current action of the unit. If
+unknown then status is set to NA.

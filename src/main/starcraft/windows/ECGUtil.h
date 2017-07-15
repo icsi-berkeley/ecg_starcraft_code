@@ -5,32 +5,53 @@
 namespace ECGBot
 {
 
+enum UnitStatus {IDLE, ATTACKING, DEFENDING, GATHERING, EXPLORING, HARASSING, BUILDING, NA};
+enum Region {EXACT, CLOSE, DISTANT, RIGHT, LEFT, BACK, FRONT};
+
+struct UnitDescriptor
+{
+  bool empty;
+	bool ally;
+  int unitID; // 0 means not set
+	int ecgIdentifier; // 0 means not set
+	int quantity; // 0 means not set
+  BWAPI::UnitType unitType; // BWAPI::UnitTypes::AllUnits is default
+  UnitStatus status; // NA means not set
+	BWAPI::Position landmark; // 0, 0 means not set
+	Region region; // Default to EXACT, not used if landmark is not set
+
+  UnitDescriptor();
+	UnitDescriptor(int uID, int uIdentifier, int quant, bool aly, BWAPI::UnitType uType, UnitStatus stat);
+  UnitDescriptor(int uID, int uIdentifier, int quant, bool aly, BWAPI::UnitType uType, UnitStatus stat, BWAPI::Position lmark, Region rgion);
+};
+
 class ECGUtil
 {
 
 public:
-	static BWAPI::UnitType ECGUtil::getUnitType(const std::string unitName) {
-		if (!unitName.compare("commandcenter")) {
+	static BWAPI::UnitType ECGUtil::getUnitType(const char* unitName) {
+		if (strcmp(unitName, "commandcenter") == 0) {
 			return BWAPI::UnitTypes::Terran_Command_Center;
 		}
-		else if (!unitName.compare("barracks")) {
+		else if (strcmp(unitName, "barracks") == 0) {
 			return BWAPI::UnitTypes::Terran_Barracks;
 		}
-		else if (!unitName.compare("refinery")) {
+		else if (strcmp(unitName, "refinery") == 0) {
 			return BWAPI::UnitTypes::Terran_Refinery;
 		}
-		else if (!unitName.compare("marine")) {
+		else if (strcmp(unitName, "marine") == 0) {
 			return BWAPI::UnitTypes::Terran_Marine;
 		}
-		else if (!unitName.compare("scv")) {
+		else if (strcmp(unitName, "scv") == 0) {
 			return BWAPI::UnitTypes::Terran_SCV;
 		}
-		else if (!unitName.compare("mineral")) {
+		else if (strcmp(unitName, "mineral") == 0) {
 			return BWAPI::UnitTypes::Resource_Mineral_Field;
 		}
-		else if (!unitName.compare("gas")) {
+		else if (strcmp(unitName, "gas") == 0) {
 			return BWAPI::UnitTypes::Resource_Vespene_Geyser;
 		}
+		return BWAPI::UnitTypes::AllUnits;
 	}
 
 	static std::string ECGUtil::getUnitName(BWAPI::UnitType unitType) {
@@ -56,6 +77,63 @@ public:
 			return "gas";
 		}
 		return "unknown";
+	}
+
+	static BWAPI::Unitset ECGUtil::resolveUnitDescriptor(UnitDescriptor ud)
+	{
+		BWAPI::Unitset matchedSet = BWAPI::Unitset();
+		if (ud.empty)
+			return matchedSet;
+
+		// bool ally;
+	  // int unitID; // 0 means not set
+		// int ecgIdentifier; // 0 means not set
+		// int quantity; // 0 means not set
+	  // BWAPI::UnitType unitType; // BWAPI::UnitTypes::AllUnits is default
+	  // UnitStatus status; // NA means not set
+		// BWAPI::Position landmark; // 0, 0 means not set
+		// Region region; // Default to EXACT, not used if landmark is not set
+
+		if (ud.unitID != 0)
+		{
+			matchedSet.insert(BWAPI::Broodwar->getUnit(ud.unitID));
+			return matchedSet;
+		}
+
+		// TODO: Do something with the ECGidentifier + quantity
+
+		if (ud.landmark.x != 0 || ud.landmark.y != 0)
+		{
+			// TODO: filter on unit type within a region and ally
+			// BWAPI::Broodwar->getUnitsInRadius(landmark, ...)
+		}
+		else
+		{
+			// filter only on unit type and ally
+			if (ud.ally)
+				matchedSet = BWAPI::Broodwar->getUnitsInRadius(ud.landmark, 999999,
+					BWAPI::Filter::GetType == ud.unitType && BWAPI::Filter::IsAlly);
+			else
+				matchedSet = BWAPI::Broodwar->getUnitsInRadius(ud.landmark, 999999,
+					BWAPI::Filter::GetType == ud.unitType && BWAPI::Filter::IsEnemy);
+		}
+
+		if (ud.status != UnitStatus::NA)
+		{
+			//TODO: Add cases for other statuses
+			switch (ud.status) {
+				case UnitStatus::IDLE:
+					BWAPI::Unitset filteredSet = BWAPI::Unitset();
+					for (auto & unit : matchedSet)
+					{
+						if (unit->isIdle())
+							filteredSet.insert(unit);
+					}
+					return filteredSet;
+			}
+		}
+
+		return matchedSet;
 	}
 
 };

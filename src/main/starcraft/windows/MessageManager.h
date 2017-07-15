@@ -4,38 +4,20 @@
 #include "rapidjson/stringbuffer.h"
 #include "TransportBridge.h"
 #include "BWAPI.h"
+#include "Message.h"
 
 namespace ECGBot
 {
-
-enum UnitsStatus {IDLE, ATTACKING, DEFENDING, GATHERING, EXPLORING, HARASSING, BUILDING, NA};
-enum LocationPosition {EXACT, NEAR, FAR, RIGHT, LEFT, BACK, FRONT};
-
-struct Location;
-
-struct Units {
-  int quantity;
-  int unitID;
-  BWAPI::UnitType unitType;
-  int unitIdentifier; // Not sure this is needed. Used to identify a unit which does not have an ID yet
-  Location location;
-  UnitsStatus status;
-};
-
-struct Location {
-  Units landmark;
-  LocationPosition position;
-}
 
 class MessageManager
 {
     MessageManager();
 
     TransportBridge*                            bridge;
-    rapidjson::Document*                        message;
-    rapidjson::Document*                        response;
+    rapidjson::Document*                        rawMessage;
     rapidjson::StringBuffer*                    request;
     rapidjson::Writer<rapidjson::StringBuffer>* requestWriter;
+    Message                                     currentMessage;
 
     void          initializeTransport();
 
@@ -44,19 +26,11 @@ public:
     // singletons
     static MessageManager & Instance();
 
-    void              beginMessage();
-    void              sendMessage();
-    bool              readMessage();
+    bool              readIncoming();
+    Message*          current() { return &currentMessage; }
 
-    bool              isStarted();
-    bool              isConditional();
-    bool              isSequential();
-    bool              isAction();
-
-    const char*		    readType();
-    BWAPI::UnitType   readUnitType();
-    int               readQuantity();
-
+    void              beginOutgoing();
+    void              sendOutgoing();
     void              sendStarted();
 
 };

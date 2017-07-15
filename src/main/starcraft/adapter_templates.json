@@ -23,7 +23,7 @@
       "parents": ["action"],
       "quantity": "*INTEGER",
       "unit_type": "*STRING",
-      "unit_identifier": "*INTEGER",
+      "ecg_identifier": "*INTEGER",
       "location": "OBJECT:location_descriptor"
     },
     "gather": {
@@ -68,17 +68,18 @@
     },
     "location_descriptor": {
       "type": "location_descriptor",
-      "landmark": "*OBJECT:unit_descriptor",
-      "position": "MC:EXACT|NEAR|FAR|RIGHT|LEFT|BACK|FRONT"
+      "landmark": "OBJECT:unit_descriptor",
+      "region": "MC:EXACT|CLOSE|DISTANT|RIGHT|LEFT|BACK|FRONT"
     },
     "unit_descriptor": {
       "type": "unit_descriptor",
-      "quantity": "INTEGER",
+      "quantity": "*INTEGER",
       "unit_type": "STRING",
       "unit_name": "STRING",
-      "unit_identifier": "INTEGER",
+      "ecg_identifier": "*INTEGER",
       "location": "OBJECT:location_descriptor",
-      "status": "MC:IDLE|ATTACKING|DEFENDING|GATHERING|EXPLORING|HARASSING|BUILDING|NA"
+      "status": "MC:IDLE|ATTACKING|DEFENDING|GATHERING|EXPLORING|HARASSING|BUILDING|NA",
+      "ally": "*BOOLEAN"
     }
   }
 }

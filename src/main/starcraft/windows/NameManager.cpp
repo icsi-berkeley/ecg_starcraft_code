@@ -14,7 +14,7 @@ const char* NameManager::names[48] = {"alpha", "beta", "gamma", "delta", "epsilo
 
 NameManager::NameManager()
 {
-  currentName = 0;
+  currentNameIdx = 0;
 }
 
 NameManager & NameManager::Instance()
@@ -25,17 +25,23 @@ NameManager & NameManager::Instance()
 
 void NameManager::setUnitName(int unitID)
 {
-  if (namesMap.count(unitID) == 0)
+  if (idToName.count(unitID) == 0)
   {
-    namesMap[unitID] = currentName;
-    currentName++;
+    // TODO: This will index out of bounds when we run out of names.
+    idToName[unitID] = names[currentNameIdx];
+    nameToID[names[currentNameIdx]] = unitID;
+    currentNameIdx++;
   }
 }
 
-const char* NameManager::getUnitName(int unitID)
+std::string NameManager::getUnitName(int unitID)
 {
-  // TODO: This will index out of bounds when we run out of names.
-  return names[namesMap[unitID]];
+  return idToName[unitID];
+}
+
+int NameManager::getUnitID(std::string unitName)
+{
+  return nameToID[unitName];
 }
 
 void NameManager::onUnitCreate(BWAPI::Unit unit)
@@ -53,5 +59,5 @@ void NameManager::onUnitShow(BWAPI::Unit unit)
 void NameManager::draw()
 {
   for (auto &u : BWAPI::Broodwar->self()->getUnits())
-    BWAPI::Broodwar->drawTextMap(u->getLeft(), u->getTop(), getUnitName(u->getID()));
+    BWAPI::Broodwar->drawTextMap(u->getLeft(), u->getTop(), getUnitName(u->getID()).c_str());
 }

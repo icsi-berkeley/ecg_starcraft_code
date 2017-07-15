@@ -197,6 +197,8 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
                 raise RuntimeError("Incorrect integer for %s. Invalid message: %s" %(k, message))
             elif v == "STRING" and not (isinstance(message[k], str) or message[k] == None):
                 raise RuntimeError("Incorrect string for %s. Invalid message: %s" %(k, message))
+            elif v == "BOOLEAN" and not (isinstance(message[k], bool) or message[k] == None):
+                raise RuntimeError("Incorrect boolean for %s. Invalid message: %s" %(k, message))
             elif v.startswith("MC"):
                 options = v.split(":")[1].split("|")
                 if message[k] not in options:
@@ -233,13 +235,31 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
                     "parents": ["action"],
                     "resource_type": "mineral",
                     "commanded_unit": {
-                        "type": "units",
-                        "quantity": -1,
+                        "type": "unit_descriptor",
+                        "quantity": 0,
                         "unit_name": None,
                         "unit_type": "scv",
-                        "unit_identifier": 1,
+                        "ecg_identifier": 1,
                         "location": None,
-                        "status": "IDLE"
+                        "status": "IDLE",
+                        "ally": True
+                    }
+                }
+            elif choice == "2.1":
+                # "Mine the minerals!"
+                message = {
+                    "type": "gather",
+                    "parents": ["action"],
+                    "resource_type": "mineral",
+                    "commanded_unit": {
+                        "type": "unit_descriptor",
+                        "quantity": 0,
+                        "unit_name": "delta",
+                        "unit_type": "scv",
+                        "ecg_identifier": 1,
+                        "location": None,
+                        "status": "IDLE",
+                        "ally": True
                     }
                 }
             elif choice == "3":
@@ -250,28 +270,23 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
                     "event": {
                         "type": "army",
                         "parents": ["event"],
-                        "units": {
-                            "type": "units",
+                        "unit_descriptor": {
+                            "type": "unit_descriptor",
                             "quantity": 8,
                             "unit_name": None,
                             "unit_type": "scv",
-                            "unit_identifier": None,
+                            "ecg_identifier": 0,
                             "location": None,
-                            "status": "NA"
+                            "status": "NA",
+                            "ally": True
                         }
                     },
                     "response": {
                         "type": "build",
                         "parents": ["action"],
-                        "units": {
-                            "type": "units",
-                            "quantity": 1,
-                            "unit_name": None,
-                            "unit_type": "scv",
-                            "unit_identifier": 1,
-                            "location": None,
-                            "status": "NA"
-                        },
+                        "quantity": 1,
+                        "unit_type": "scv",
+                        "ecg_identifier": 1,
                         "location": None,
                         "commanded_unit": None
                     }
@@ -284,14 +299,15 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
                     "event": {
                         "type": "army",
                         "parents": ["event"],
-                        "units": {
-                            "type": "units",
-                            "quantity": None,
+                        "unit_descriptor": {
+                            "type": "unit_descriptor",
+                            "quantity": 0,
                             "unit_name": None,
                             "unit_type": "scv",
-                            "unit_identifier": None,
+                            "ecg_identifier": 0,
                             "location": None,
-                            "status": "IDLE"
+                            "status": "IDLE",
+                            "ally": True
                         }
                     },
                     "response": {
@@ -299,13 +315,14 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
                         "parents": ["action"],
                         "resource_type": "*STRING",
                         "commanded_unit": {
-                            "type": "units",
-                            "quantity": -1,
+                            "type": "unit_descriptor",
+                            "quantity": 0,
                             "unit_name": None,
                             "unit_type": "scv",
-                            "unit_identifier": 1,
+                            "ecg_identifier": 0,
                             "location": None,
-                            "status": "IDLE"
+                            "status": "IDLE",
+                            "ally": True
                         }
                     }
                 }
@@ -319,5 +336,5 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
 
 if __name__ == "__main__":
     solver = BasicStarcraftProblemSolver(sys.argv[1:])
-    # solver.adapter_connect()
+    solver.adapter_connect()
     solver.temporary_hack()

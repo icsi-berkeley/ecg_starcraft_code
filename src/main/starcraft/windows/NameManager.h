@@ -9,8 +9,9 @@ class NameManager
 {
   NameManager();
   static const char*  names[48];
-  int                 currentName;
-  std::map<int, int>  namesMap;
+  int                 currentNameIdx;
+  std::map<int, std::string>  idToName;
+  std::map<std::string, int>  nameToID;
 
   void        setUnitName(int unitID);
 public:
@@ -18,7 +19,8 @@ public:
   // singletons
   static NameManager & Instance();
 
-  const char* getUnitName(int unitID);
+  std::string getUnitName(int unitID);
+  int         getUnitID(std::string unitName);
 
   // TODO: remove unit names on destruction
   void        onUnitCreate(BWAPI::Unit unit);
