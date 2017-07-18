@@ -1,6 +1,7 @@
 #pragma once
 #include "BWAPI.h"
 #include "ECGUtil.h"
+#include "Message.h"
 
 namespace ECGBot
 {
@@ -14,8 +15,10 @@ public:
     // singletons
     static ECGStarcraftManager & Instance();
 
-    void    build(UnitDescriptor commandedUnits, const BWAPI::UnitType unitType, int count);
-    void    gather(UnitDescriptor commandedUnits, const BWAPI::UnitType resourceType);
+    void    evaluateAction(Message* message);
+
+    void    build(Message* message);
+    void    gather(Message* message);
 
 };
 }

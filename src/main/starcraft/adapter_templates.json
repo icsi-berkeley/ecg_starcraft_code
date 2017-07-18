@@ -3,8 +3,8 @@
     "is_started": {
       "type": "is_started"
     },
-    "condition": {
-      "type": "condition",
+    "conditional": {
+      "type": "conditional",
       "trigger": "MC:ONCE|WHILE|UNTIL|IF",
       "event": "*OBJECT:event",
       "response": "*OBJECT:action|condition|sequential"
@@ -29,7 +29,7 @@
     "gather": {
       "type": "gather",
       "parents": ["action"],
-      "resource_type": "*STRING"
+      "resource_type": "MC:gas|minerals"
     },
     "move": {
       "type": "move",
@@ -54,16 +54,22 @@
       "parents": ["event"],
       "unit_descriptor": "*OBJECT:unit_descriptor"
     },
-    "resources": {
-      "type": "resources",
+    "resource": {
+      "type": "resource",
       "parents": ["event"],
-      "resource_type": "MC:population|gas|minerals",
-      "value": "*INTEGER",
+      "resource_enum": "MC:supply|gas|minerals",
+      "threshold": "*INTEGER",
       "comparator": "MC:GREATER|LESS|EQUAL"
     },
     "construction": {
       "type": "construction",
       "parents": ["event"],
+      "unit_descriptor": "*OBJECT:unit_descriptor"
+    },
+    "location": {
+      "type": "location",
+      "parents": ["event"],
+      "location_descriptor": "*OBJECT:location_descriptor",
       "unit_descriptor": "*OBJECT:unit_descriptor"
     },
     "location_descriptor": {

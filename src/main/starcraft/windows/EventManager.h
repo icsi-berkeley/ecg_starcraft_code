@@ -1,42 +1,37 @@
 #pragma once
-#include "rapidjson/document.h"
-#include "rapidjson/writer.h"
-#include "rapidjson/stringbuffer.h"
 #include "BWAPI.h"
-#include "MessageManager.h"
+#include "ECGUtil.h"
+#include "Message.h"
 
 namespace ECGBot
 {
 
-enum Resource {minerals, gas, population};
-enum Comparator {greater, less, equal};
-enum EventKind {ONCE, WHILE, UNTIL, IF};
-
 struct ArmyEvent {
   UnitDescriptor units;
-  Message nextAction;
+  Message* nextAction;
   EventKind kind;
-  BWAPI::Position initialMousePosition;
-  BWAPI::Unitset selectedUnits;
+
+  ArmyEvent(UnitDescriptor ud, Message* ac, EventKind ek);
 };
 
 struct ResourceEvent {
   Resource resource;
   int threshold;
   Comparator comparator;
-  Message nextAction;
+  Message* nextAction;
   EventKind kind;
-  BWAPI::Position initialMousePosition;
-  BWAPI::Unitset selectedUnits;
-}
+
+  ResourceEvent(Resource r, int t, Comparator c, Message* ac, EventKind ek);
+};
 
 struct LocationEvent {
   UnitDescriptor units;
   BWAPI::Position position;
-  Message nextAction;
+  Region region;
+  Message* nextAction;
   EventKind kind;
-  BWAPI::Position initialMousePosition;
-  BWAPI::Unitset selectedUnits;
+
+  LocationEvent(UnitDescriptor ud, BWAPI::Position pos, Region reg, Message* ac, EventKind ek);
 };
 
 // struct ConstructionEvent { TODO: Some magic shit to make this work
@@ -45,15 +40,27 @@ struct LocationEvent {
 
 class EventManager
 {
-    EventManager();
+  EventManager();
 
-    std::list<ArmyEvent>          armyEventList;
-    std::list<ResourceEvent>      resourceEventList;
-    std::list<LocationEvent>      locationEventList;
+  std::list<ArmyEvent*>            armyEventList;
+  std::list<ResourceEvent*>        resourceEventList;
+  std::list<LocationEvent*>        locationEventList;
+  // std::list<ConstructionEvent>  constructionEventList;
 
 public:
-    // singletons
-    static EventManager & Instance();
+  // singletons
+  static EventManager & Instance();
+
+  void        registerEvent(Message* message);
+  void        registerArmyEvent(Message* event, Message* response, EventKind kind);
+  void        registerResourceEvent(Message* event, Message* response, EventKind kind);
+  void        registerLocationEvent(Message* event, Message* response, EventKind kind);
+
+  bool        checkArmyEvent(ArmyEvent* event);
+  bool        checkResourceEvent(ResourceEvent* event);
+  bool        checkLocationEvent(LocationEvent* event);
+
+  void        update();
 
 };
 }

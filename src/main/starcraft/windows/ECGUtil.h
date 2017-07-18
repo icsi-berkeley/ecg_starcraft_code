@@ -1,10 +1,14 @@
 #pragma once
 
 #include <BWAPI.h>
+#include "rapidjson/document.h"
 
 namespace ECGBot
 {
 
+enum Resource {minerals, gas, supply};
+enum Comparator {greater, less, equal};
+enum EventKind {ONCE, WHILE, UNTIL, IF};
 enum UnitStatus {IDLE, ATTACKING, DEFENDING, GATHERING, EXPLORING, HARASSING, BUILDING, NA};
 enum Region {EXACT, CLOSE, DISTANT, RIGHT, LEFT, BACK, FRONT};
 
@@ -12,17 +16,19 @@ struct UnitDescriptor
 {
   bool empty;
 	bool ally;
-  int unitID; // 0 means not set
-	int ecgIdentifier; // 0 means not set
-	int quantity; // 0 means not set
+  int unitID; // <= 0 means not set
+	int ecgIdentifier; // <= 0 means not set
+	int quantity; // <= 0 means not set
   BWAPI::UnitType unitType; // BWAPI::UnitTypes::AllUnits is default
   UnitStatus status; // NA means not set
 	BWAPI::Position landmark; // 0, 0 means not set
-	Region region; // Default to EXACT, not used if landmark is not set
+	Region region; // Default to EXACT, NOT used if landmark is not set (i.e. 0, 0),
+	BWAPI::Unitset selectedUnits;
 
   UnitDescriptor();
-	UnitDescriptor(int uID, int uIdentifier, int quant, bool aly, BWAPI::UnitType uType, UnitStatus stat);
-  UnitDescriptor(int uID, int uIdentifier, int quant, bool aly, BWAPI::UnitType uType, UnitStatus stat, BWAPI::Position lmark, Region rgion);
+	UnitDescriptor(int uID, int uIdentifier, int quant, bool aly, BWAPI::UnitType uType, UnitStatus stat, BWAPI::Unitset selected);
+  UnitDescriptor(int uID, int uIdentifier, int quant, bool aly, BWAPI::UnitType uType, UnitStatus stat, BWAPI::Unitset selected,
+								 BWAPI::Position lmark, Region rgion);
 };
 
 class ECGUtil
@@ -45,7 +51,7 @@ public:
 		else if (strcmp(unitName, "scv") == 0) {
 			return BWAPI::UnitTypes::Terran_SCV;
 		}
-		else if (strcmp(unitName, "mineral") == 0) {
+		else if (strcmp(unitName, "minerals") == 0) {
 			return BWAPI::UnitTypes::Resource_Mineral_Field;
 		}
 		else if (strcmp(unitName, "gas") == 0) {
@@ -85,24 +91,15 @@ public:
 		if (ud.empty)
 			return matchedSet;
 
-		// bool ally;
-	  // int unitID; // 0 means not set
-		// int ecgIdentifier; // 0 means not set
-		// int quantity; // 0 means not set
-	  // BWAPI::UnitType unitType; // BWAPI::UnitTypes::AllUnits is default
-	  // UnitStatus status; // NA means not set
-		// BWAPI::Position landmark; // 0, 0 means not set
-		// Region region; // Default to EXACT, not used if landmark is not set
-
-		if (ud.unitID != 0)
+		if (ud.unitID > 0)
 		{
 			matchedSet.insert(BWAPI::Broodwar->getUnit(ud.unitID));
 			return matchedSet;
 		}
 
-		// TODO: Do something with the ECGidentifier + quantity
+		// TODO: Do something with the ECGidentifier and quantity
 
-		if (ud.landmark.x != 0 || ud.landmark.y != 0)
+		if (ud.landmark.x > 0 || ud.landmark.y > 0)
 		{
 			// TODO: filter on unit type within a region and ally
 			// BWAPI::Broodwar->getUnitsInRadius(landmark, ...)
@@ -111,10 +108,10 @@ public:
 		{
 			// filter only on unit type and ally
 			if (ud.ally)
-				matchedSet = BWAPI::Broodwar->getUnitsInRadius(ud.landmark, 999999,
+				matchedSet = BWAPI::Broodwar->getUnitsInRadius(0, 0, 999999,
 					BWAPI::Filter::GetType == ud.unitType && BWAPI::Filter::IsAlly);
 			else
-				matchedSet = BWAPI::Broodwar->getUnitsInRadius(ud.landmark, 999999,
+				matchedSet = BWAPI::Broodwar->getUnitsInRadius(0, 0, 999999,
 					BWAPI::Filter::GetType == ud.unitType && BWAPI::Filter::IsEnemy);
 		}
 
@@ -129,8 +126,22 @@ public:
 						if (unit->isIdle())
 							filteredSet.insert(unit);
 					}
-					return filteredSet;
+					matchedSet = filteredSet;
 			}
+		}
+
+		if (!ud.selectedUnits.empty())
+		{
+
+			BWAPI::Unitset intersection;
+			for (auto & worker : ud.selectedUnits)
+		  {
+		    if (matchedSet.find(worker) != matchedSet.end())
+					intersection.insert(worker);
+		  }
+
+			if (!intersection.empty())
+				return intersection;
 		}
 
 		return matchedSet;

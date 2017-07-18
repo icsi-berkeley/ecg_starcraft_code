@@ -26,6 +26,7 @@ void MessageManager::initializeTransport()
   bridge = new TransportBridge();
   rawMessage = new rapidjson::Document();
   request = new rapidjson::StringBuffer();
+	currentMessage = new Message();
   requestWriter = new rapidjson::Writer<rapidjson::StringBuffer>(*request);
 }
 
@@ -47,7 +48,8 @@ bool MessageManager::readIncoming()
         BWAPI::Broodwar->sendText((*rawMessage)[3].GetString()); // Raw Message
       }
 
-			currentMessage = Message((*rawMessage)[3].GetString()); // Unpack message
+			currentMessage->setBody((*rawMessage)[3].GetString()); // Unpack message
+			currentMessage->resetGameInfo(); // Update associated game information
       return true;
     }
   }

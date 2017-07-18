@@ -17,7 +17,7 @@ class MessageManager
     rapidjson::Document*                        rawMessage;
     rapidjson::StringBuffer*                    request;
     rapidjson::Writer<rapidjson::StringBuffer>* requestWriter;
-    Message                                     currentMessage;
+    Message*                                    currentMessage;
 
     void          initializeTransport();
 
@@ -27,7 +27,7 @@ public:
     static MessageManager & Instance();
 
     bool              readIncoming();
-    Message*          current() { return &currentMessage; }
+    Message*          current() { return currentMessage; }
 
     void              beginOutgoing();
     void              sendOutgoing();

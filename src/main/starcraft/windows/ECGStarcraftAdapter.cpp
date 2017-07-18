@@ -17,6 +17,7 @@
 #include "ProductionManager.h"
 #include "BuildingManager.h"
 #include "NameManager.h"
+#include "EventManager.h"
 
 using namespace ECGBot;
 
@@ -41,7 +42,7 @@ void ECGStarcraftAdapter::onStart()
 
   // Get BWTA ready for the InformationManager
   BWTA::readMap();
-	BWTA::analyze();
+  BWTA::analyze();
 
 }
 
@@ -54,7 +55,7 @@ void ECGStarcraftAdapter::onFrame()
   // Display the game frame rate as text in the upper left area of the screen
   BWAPI::Broodwar->drawTextScreen(10, 10,  "FPS: %d", BWAPI::Broodwar->getFPS() );
   BWAPI::Broodwar->drawTextScreen(10, 20, "Average FPS: %f", BWAPI::Broodwar->getAverageFPS() );
-  BWAPI::Broodwar->drawTextScreen(10, 30, "APM: %f", BWAPI::Broodwar->getAPM() );
+  BWAPI::Broodwar->drawTextScreen(10, 30, "APM: %d", BWAPI::Broodwar->getAPM() );
 
   NameManager::Instance().draw();
 
@@ -70,29 +71,16 @@ void ECGStarcraftAdapter::onFrame()
   // MessageManager::Instance().sendRequest();
   while (MessageManager::Instance().readIncoming())
   {
-  	Message* currentMessage = MessageManager::Instance().current();
-  	if (currentMessage->isStarted())
-    {
+    Message* currentMessage = MessageManager::Instance().current();
+    if (currentMessage->isStarted())
       MessageManager::Instance().sendStarted();
-    }
-  	else if (currentMessage->isConditional())
-    {
-      return; // TODO: Handle conditionals
-    }
-  	else if (currentMessage->isSequential())
+    else if (currentMessage->isConditional())
+      EventManager::Instance().registerEvent(currentMessage);
+    else if (currentMessage->isAction())
+      ECGStarcraftManager::Instance().evaluateAction(currentMessage);
+    else if (currentMessage->isSequential())
     {
       return; // TODO: Handle sequentials
-    }
-  	else if (strcmp(currentMessage->readType(), "build") == 0)
-    {
-      BWAPI::UnitType unitType = currentMessage->readUnitType();
-      int quantity = currentMessage->readQuantity();
-      ECGStarcraftManager::Instance().build(UnitDescriptor(), unitType, quantity);
-    }
-  	else if (strcmp(currentMessage->readType(), "gather") == 0)
-    {
-      // TODO: It makes more sense to just pass the message
-      ECGStarcraftManager::Instance().gather(currentMessage->readCommandedUnit(), currentMessage->readResourceType());
     }
 
   }
@@ -102,6 +90,8 @@ void ECGStarcraftAdapter::onFrame()
   UAlbertaBot::WorkerManager::Instance().update();
   UAlbertaBot::ProductionManager::Instance().update();
   UAlbertaBot::BuildingManager::Instance().update();
+
+  EventManager::Instance().update();
 
 }
 
@@ -131,7 +121,7 @@ void ECGStarcraftAdapter::onUnitEvade(BWAPI::Unit unit) {}
 void ECGStarcraftAdapter::onUnitShow(BWAPI::Unit unit)
 {
   UAlbertaBot::InformationManager::Instance().onUnitShow(unit);
-	UAlbertaBot::WorkerManager::Instance().onUnitShow(unit);
+  UAlbertaBot::WorkerManager::Instance().onUnitShow(unit);
   NameManager::Instance().onUnitShow(unit);
 }
 
@@ -150,8 +140,8 @@ void ECGStarcraftAdapter::onUnitDestroy(BWAPI::Unit unit)
 {
   // TODO: Remove the unit label
   UAlbertaBot::ProductionManager::Instance().onUnitDestroy(unit);
-	UAlbertaBot::WorkerManager::Instance().onUnitDestroy(unit);
-	UAlbertaBot::InformationManager::Instance().onUnitDestroy(unit);
+  UAlbertaBot::WorkerManager::Instance().onUnitDestroy(unit);
+  UAlbertaBot::InformationManager::Instance().onUnitDestroy(unit);
 }
 
 void ECGStarcraftAdapter::onUnitMorph(BWAPI::Unit unit) {}

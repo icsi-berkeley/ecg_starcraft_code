@@ -5,10 +5,10 @@ started, all commands are saved in the problem solver.
 Control Templates:
 These templates are the basis of valid messages.
 
-condition
+conditional
 A pairing of a control template with an event template. The response should trigger ONCE upon an
 event, trigger repeatedly WHILE an event occurs for the first time, trigger repeatedly UNTIL an
-event occurs for the first time, or trigger IF the event ever occurs.
+event occurs for the first time, or ALWAYS trigger when the event ever occurs.
 
 sequential
 A pairing of a control template with another control template. The orders specified by the first
@@ -54,8 +54,8 @@ the units.
 resources
 A template for the event of having a certain resource state. It is required to specify the resource
 type, a value for that resource and whether the comparator is greater, less or equal to the value.
-A value of -1 for population refers to the maximum population. A value of -X for population refers
-to X-1 less than the maximum population.
+A value of -1 for supply refers to the maximum supply. A value of -X for supply refers
+to X-1 less than the maximum supply.
 
 construction
 A template for the event of having a completed constructing a certain unit. It is required to
@@ -71,7 +71,7 @@ landmark. If no landmark is given, then the user's mouse position will be used a
 
 units
 Required to specify one of the fields. The quantity determines how many of the specified class of
-units. A quantity of 0 means all units that match the class of units (could potentially be none).
+units. A quantity of <=0 means all units that match the class of units (could potentially be none).
 The unit name provides a unique identifier to a completed unit. The ecg identifier provides a
 unique identification to a unit that is referred to elsewhere in the command. A ecg identifier of 0
 means not set. If the quantity is x > 1, then it is assumed that the identifiers will be id, id + 1,
