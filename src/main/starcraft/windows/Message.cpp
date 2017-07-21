@@ -10,15 +10,15 @@ Message::Message()
 Message::Message(const char* message)
 {
   body = new rapidjson::Document();
-  body->Parse(message);
-  cursorPosition = BWAPI::Broodwar->getMousePosition();
+  setBody(message);
+  cursorPosition = ECGUtil::getMousePosition();
   selectedUnits = BWAPI::Broodwar->getSelectedUnits();
 }
 
 Message::Message(const char* message, BWAPI::Position cursorPos, BWAPI::Unitset selected)
 {
   body = new rapidjson::Document();
-  body->Parse(message);
+  setBody(message);
   cursorPosition = cursorPos;
   selectedUnits = selected;
 }
@@ -27,8 +27,9 @@ Message::Message(const rapidjson::Value& msg)
 {
   body = new rapidjson::Document();
   body->CopyFrom(msg, body->GetAllocator());
-  cursorPosition = BWAPI::Broodwar->getMousePosition();
+  cursorPosition = ECGUtil::getMousePosition();
   selectedUnits = BWAPI::Broodwar->getSelectedUnits();
+  assert((*body)["type"].IsString());
 }
 
 Message::Message(const rapidjson::Value& msg, BWAPI::Position cursorPos, BWAPI::Unitset selected)
@@ -37,16 +38,18 @@ Message::Message(const rapidjson::Value& msg, BWAPI::Position cursorPos, BWAPI::
   body->CopyFrom(msg, body->GetAllocator());
   cursorPosition = cursorPos;
   selectedUnits = selected;
+  assert((*body)["type"].IsString());
 }
 
 void Message::setBody(const char* message)
 {
   body->Parse(message);
+  assert((*body)["type"].IsString());
 }
 
 void Message::resetGameInfo()
 {
-  cursorPosition = BWAPI::Broodwar->getMousePosition();
+  cursorPosition = ECGUtil::getMousePosition();
   selectedUnits = BWAPI::Broodwar->getSelectedUnits();
 }
 
@@ -70,18 +73,14 @@ bool Message::isAction()
   return !isConditional() && !isSequential();
 }
 
-Message* Message::readEvent()
+const char* Message::readType()
 {
-  return new Message((*body)["event"], cursorPosition, selectedUnits);
-}
-
-Message* Message::readResponse()
-{
-  return new Message((*body)["response"], cursorPosition, selectedUnits);
+  return (*body)["type"].GetString();
 }
 
 EventKind Message::readTrigger()
 {
+  assert((*body)["trigger"].IsString());
   EventKind triggerEnum;
   const char * triggerStr = (*body)["trigger"].GetString();
 
@@ -91,27 +90,30 @@ EventKind Message::readTrigger()
     triggerEnum = EventKind::WHILE;
   else if (strcmp(triggerStr, "UNTIL") == 0)
     triggerEnum = EventKind::UNTIL;
-  else if (strcmp(triggerStr, "IF") == 0)
-    triggerEnum = EventKind::IF;
+  else if (strcmp(triggerStr, "ALWAYS") == 0)
+    triggerEnum = EventKind::ALWAYS;
   else
     assert(0); // Should not reach here
 
   return triggerEnum;
 }
 
-const char* Message::readType()
+Message* Message::readEvent()
 {
-  return (*body)["type"].GetString();
+  assert((*body)["event"].IsObject());
+  return new Message((*body)["event"], cursorPosition, selectedUnits);
+}
+
+Message* Message::readResponse()
+{
+  assert((*body)["response"].IsObject());
+  return new Message((*body)["response"], cursorPosition, selectedUnits);
 }
 
 int Message::readQuantity()
 {
+  assert((*body)["quantity"].IsInt());
   return (*body)["quantity"].GetInt();
-}
-
-int Message::readThreshold()
-{
-  return (*body)["threshold"].GetInt();
 }
 
 BWAPI::UnitType Message::readUnitType()
@@ -119,48 +121,54 @@ BWAPI::UnitType Message::readUnitType()
   return ECGUtil::getUnitType((*body)["unit_type"].GetString());
 }
 
+int Message::readECGID()
+{
+  assert((*body)["quantity"].IsInt());
+  return (*body)["ecg_id"].GetInt();
+}
+
 Resource Message::readResourceType()
 {
+  assert((*body)["resource_type"].IsString());
   Resource resourceEnum;
   const char * resourceStr = (*body)["resource_type"].GetString();
 
-  if (strcmp(resourceStr, "minerals") == 0)
-    resourceEnum = Resource::minerals;
-  else if (strcmp(resourceStr, "gas") == 0)
-    resourceEnum = Resource::gas;
-  else if (strcmp(resourceStr, "supply") == 0)
-    resourceEnum = Resource::supply;
+  if (strcmp(resourceStr, "MINERALS") == 0)
+    resourceEnum = Resource::MINERALS;
+  else if (strcmp(resourceStr, "GAS") == 0)
+    resourceEnum = Resource::GAS;
+  else if (strcmp(resourceStr, "SUPPLY") == 0)
+    resourceEnum = Resource::SUPPLY;
+  else
+    assert(0);
 
   return resourceEnum;
-  // return ECGUtil::getUnitType((*body)["resource_type"].GetString());
 }
 
-Resource Message::readResourceEnum()
+int Message::readThreshold()
 {
-  Resource resourceEnum;
-  const char * resourceStr = (*body)["resource_enum"].GetString();
-
-  if (strcmp(resourceStr, "minerals") == 0)
-    resourceEnum = Resource::minerals;
-  else if (strcmp(resourceStr, "gas") == 0)
-    resourceEnum = Resource::gas;
-  else if (strcmp(resourceStr, "supply") == 0)
-    resourceEnum = Resource::supply;
-
-  return resourceEnum;
+  assert((*body)["threshold"].IsInt());
+  return (*body)["threshold"].GetInt();
 }
 
 Comparator Message::readComparator()
 {
-  Comparator compEnum;
-  const char * compStr = (*body)["comparator"].GetString();
+  return readComparator((*body)["comparator"].GetString());
+}
 
-  if (strcmp(compStr, "GREATER") == 0)
-    compEnum = Comparator::greater;
-  else if (strcmp(compStr, "LESS") == 0)
-    compEnum = Comparator::less;
-  else if (strcmp(compStr, "EQUAL") == 0)
-    compEnum = Comparator::equal;
+Comparator Message::readComparator(const char * compStr)
+{
+  assert(compStr != NULL);
+  Comparator compEnum;
+
+  if (strcmp(compStr, "GEQ") == 0)
+    compEnum = Comparator::GEQ;
+  else if (strcmp(compStr, "LEQ") == 0)
+    compEnum = Comparator::LEQ;
+  else if (strcmp(compStr, "EQ") == 0)
+    compEnum = Comparator::EQ;
+  else
+    assert(0);
 
   return compEnum;
 }
@@ -170,6 +178,20 @@ UnitDescriptor Message::readCommandedUnit()
   if ((*body)["commanded_unit"].IsNull())
     return UnitDescriptor();
   return readUnitDescriptor((*body)["commanded_unit"]);
+}
+
+UnitDescriptor Message::readSetOne()
+{
+  if ((*body)["set_one"].IsNull())
+    return UnitDescriptor();
+  return readUnitDescriptor((*body)["set_one"]);
+}
+
+UnitDescriptor Message::readSetTwo()
+{
+  if ((*body)["set_two"].IsNull())
+    return UnitDescriptor();
+  return readUnitDescriptor((*body)["set_two"]);
 }
 
 UnitDescriptor Message::readUnitDescriptor()
@@ -184,14 +206,13 @@ UnitDescriptor Message::readUnitDescriptor(const rapidjson::Value& unitDescripto
   // TODO: I think I should put a flag on the unit_descriptor saying if I have unresolved anaphora
   // If true, then fill a field on the UnitDescriptor containing a set of the selected units
   // OR, I can always try using the selectedUnits and if they are empty then i try again without them < doing that
-  int unitID;
-  if (unitDescriptor["unit_name"].IsNull())
-    unitID = -1;
-  else
-    unitID = NameManager::Instance().getUnitID(unitDescriptor["unit_name"].GetString());
 
-  int ecgIdentifier = unitDescriptor["ecg_identifier"].GetInt(); // may want custom type for this
+  int unitID = unitDescriptor["name"].IsNull() ? 0 : NameManager::Instance().getUnitID(unitDescriptor["name"].GetString());
+  int ecgID = unitDescriptor["ecg_id"].IsNull() ? 0 : unitDescriptor["ecg_id"].GetInt(); // may want custom type for this
+
   int quantity = unitDescriptor["quantity"].GetInt();
+  Comparator compEnum = readComparator(unitDescriptor["comparator"].GetString());
+
   bool ally = unitDescriptor["ally"].GetBool();
   BWAPI::UnitType unitType = ECGUtil::getUnitType(unitDescriptor["unit_type"].GetString());
 
@@ -200,42 +221,39 @@ UnitDescriptor Message::readUnitDescriptor(const rapidjson::Value& unitDescripto
 
   if (strcmp(statusStr, "IDLE") == 0)
     statusEnum = UnitStatus::IDLE;
+  else if (strcmp(statusStr, "GATHERING") == 0)
+    statusEnum = UnitStatus::GATHERING;
+  else if (strcmp(statusStr, "BUILDING") == 0)
+    statusEnum = UnitStatus::BUILDING;
+  else if (strcmp(statusStr, "UNDERATTACK") == 0)
+    statusEnum = UnitStatus::UNDERATTACK;
   else if (strcmp(statusStr, "ATTACKING") == 0)
     statusEnum = UnitStatus::ATTACKING;
   else if (strcmp(statusStr, "DEFENDING") == 0)
     statusEnum = UnitStatus::DEFENDING;
-  else if (strcmp(statusStr, "GATHERING") == 0)
-    statusEnum = UnitStatus::GATHERING;
-  else if (strcmp(statusStr, "EXPLORING") == 0)
-    statusEnum = UnitStatus::EXPLORING;
-  else if (strcmp(statusStr, "HARASSING") == 0)
-    statusEnum = UnitStatus::HARASSING;
-  else if (strcmp(statusStr, "BUILDING") == 0)
-    statusEnum = UnitStatus::BUILDING;
   else if (strcmp(statusStr, "NA") == 0)
     statusEnum = UnitStatus::NA;
-
-  if (unitDescriptor["location"].IsNull())
-    return UnitDescriptor(unitID, ecgIdentifier, quantity, ally, unitType, statusEnum, selectedUnits);
+  else
+    assert(0);
 
   BWAPI::Position landmark = readLandmark(unitDescriptor["location"]);
   Region regionEnum = readRegion(unitDescriptor["location"]);
 
-  return UnitDescriptor(unitID, ecgIdentifier, quantity, ally, unitType, statusEnum, selectedUnits, landmark, regionEnum);
+  return UnitDescriptor(unitID, ecgID, quantity, compEnum, ally, unitType, statusEnum, selectedUnits, landmark, regionEnum);
 }
 
 BWAPI::Position Message::readLandmark()
 {
   if ((*body)["location"].IsNull())
-    return BWAPI::Position(0, 0);
+    return BWAPI::Positions::None;
   return readLandmark((*body)["location"]);
 }
 
 BWAPI::Position Message::readLandmark(const rapidjson::Value& locationDescriptor)
 {
-  BWAPI::Position landmark;
-
-  if (locationDescriptor["landmark"].IsNull())
+  if (locationDescriptor.IsNull())
+    return BWAPI::Positions::None;
+  else if (locationDescriptor["landmark"].IsNull())
     return cursorPosition;
   else
     return ECGUtil::resolveUnitDescriptor(readUnitDescriptor(locationDescriptor["landmark"])).getPosition();
@@ -244,30 +262,36 @@ BWAPI::Position Message::readLandmark(const rapidjson::Value& locationDescriptor
 Region Message::readRegion()
 {
   if ((*body)["location"].IsNull())
-    assert(0); // SHOULD NEVER REACH THIS
+    return Region::EXACT;
   return readRegion((*body)["location"]);
 }
 
 Region Message::readRegion(const rapidjson::Value& locationDescriptor)
 {
+  if (locationDescriptor.IsNull())
+    return Region::EXACT;
+
+  assert(locationDescriptor["region"].IsString());
   const char* regionStr = locationDescriptor["region"].GetString();
 
   Region regionEnum;
 
   if (strcmp(regionStr, "EXACT") == 0)
-  regionEnum = Region::EXACT;
+    regionEnum = Region::EXACT;
   else if (strcmp(regionStr, "CLOSE") == 0)
-  regionEnum = Region::CLOSE;
+    regionEnum = Region::CLOSE;
   else if (strcmp(regionStr, "DISTANT") == 0)
-  regionEnum = Region::DISTANT;
+    regionEnum = Region::DISTANT;
   else if (strcmp(regionStr, "RIGHT") == 0)
-  regionEnum = Region::RIGHT;
+    regionEnum = Region::RIGHT;
   else if (strcmp(regionStr, "LEFT") == 0)
-  regionEnum = Region::LEFT;
+    regionEnum = Region::LEFT;
   else if (strcmp(regionStr, "BACK") == 0)
-  regionEnum = Region::BACK;
+    regionEnum = Region::BACK;
   else if (strcmp(regionStr, "FRONT") == 0)
-  regionEnum = Region::FRONT;
+    regionEnum = Region::FRONT;
+  else
+    assert(0);
 
   return regionEnum;
 }

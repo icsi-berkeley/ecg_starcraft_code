@@ -335,6 +335,14 @@ void ProductionManager::create(BWAPI::Unit producer, BuildOrderItem & item)
 
     MetaType t = item.metaType;
 
+		if (t.getUnitType() == BWAPI::UnitTypes::Terran_SCV)
+    {
+      FILE * error_file;
+      error_file = fopen("C:/Users/Vivek Raghuram/Desktop/stderr.txt", "a");
+      fprintf(error_file, "Creating an SCV!.\n");
+      fclose(error_file);
+    }
+
     // if we're dealing with a building
     if (t.isUnit() && t.getUnitType().isBuilding()
         && t.getUnitType() != BWAPI::UnitTypes::Zerg_Lair
@@ -697,15 +705,13 @@ bool ProductionManager::canPlanBuildOrderNow() const
 }
 
 // Custom method to add something to the queue as high priority
-// TODO: Remove duplicates
-void ProductionManager::queueHighPriorityUnit(BWAPI::UnitType unitType, bool removeDuplicate)
+void ProductionManager::queueHighPriorityUnit(BWAPI::UnitType unitType)
 {
-	_queue.queueAsHighestPriority(MetaType(unitType), true);
+	_queue.queueAsHighestPriority(MetaType(unitType), false);
 }
 
 // Custom method to add something to the queue as low priority
-// TODO: Remove duplicates
-void ProductionManager::queueLowPriorityUnit(BWAPI::UnitType unitType, bool removeDuplicate)
+void ProductionManager::queueLowPriorityUnit(BWAPI::UnitType unitType)
 {
-	_queue.queueAsLowestPriority(MetaType(unitType), true);
+	_queue.queueAsLowestPriority(MetaType(unitType), false);
 }

@@ -58,6 +58,7 @@ void ECGStarcraftAdapter::onFrame()
   BWAPI::Broodwar->drawTextScreen(10, 30, "APM: %d", BWAPI::Broodwar->getAPM() );
 
   NameManager::Instance().draw();
+  UAlbertaBot::ProductionManager::Instance().drawProductionInformation(200, 10);
 
   // Return if the game is a replay or is paused
   if ( BWAPI::Broodwar->isReplay() || BWAPI::Broodwar->isPaused() || !BWAPI::Broodwar->self() )
@@ -68,7 +69,6 @@ void ECGStarcraftAdapter::onFrame()
   if ( BWAPI::Broodwar->getFrameCount() % BWAPI::Broodwar->getLatencyFrames() != 0 )
     return;
 
-  // MessageManager::Instance().sendRequest();
   while (MessageManager::Instance().readIncoming())
   {
     Message* currentMessage = MessageManager::Instance().current();

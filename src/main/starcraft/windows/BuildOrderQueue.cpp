@@ -66,6 +66,13 @@ bool BuildOrderQueue::canSkipItem()
 
 void BuildOrderQueue::queueItem(BuildOrderItem b)
 {
+	if (b.metaType.getUnitType() == BWAPI::UnitTypes::Terran_SCV)
+	{
+		FILE * error_file;
+		error_file = fopen("C:/Users/Vivek Raghuram/Desktop/stderr.txt", "a");
+		fprintf(error_file, "Queuing an SCV!.\n");
+		fclose(error_file);
+	}
 	// if the queue is empty, set the highest and lowest priorities
 	if (queue.empty())
 	{

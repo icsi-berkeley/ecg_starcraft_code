@@ -57,8 +57,8 @@ public:
     BWAPI::Unit getProducer(MetaType t,BWAPI::Position closestTo = BWAPI::Positions::None);
 
     // Custom added method
-    void        queueHighPriorityUnit(BWAPI::UnitType unitType, bool removeDuplicate = false);
-    void        queueLowPriorityUnit(BWAPI::UnitType unitType, bool removeDuplicate = false);
+    void        queueHighPriorityUnit(BWAPI::UnitType unitType);
+    void        queueLowPriorityUnit(BWAPI::UnitType unitType);
 };
 
 

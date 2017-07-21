@@ -4,33 +4,21 @@
       "protagonist": {
         "descriptor": "objectDescriptor"
       },
-      "control_state": "ongoing",
       "p_features": {
         "descriptor": "processFeatures"
       },
       "actionary": "actionary",
       "collaborative": null,
       "heading": {
-        "descriptor": "headingDescriptor",
-        "default": {
-          "headingDescriptor": "north"
-        }
+        "descriptor": "headingDescriptor"
       },
       "distance": {
-        "descriptor": "scaleDescriptor",
-        "default": {
-          "scaleDescriptor": {
-            "units": "inches",
-            "value": 4.0,
-            "property": "distance"
-          }
-        }
+        "descriptor": "scaleDescriptor"
       },
       "spg": {
         "descriptor": "spgDescriptor"
       },
-      "direction": "direction",
-      "speed": 0.5
+      "direction": "direction"
     },
     "Stasis": {
       "protagonist": {

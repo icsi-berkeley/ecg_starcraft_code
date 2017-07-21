@@ -19,6 +19,7 @@ public:
 
     void    build(Message* message);
     void    gather(Message* message);
+    void    move(Message* message);
 
 };
 }

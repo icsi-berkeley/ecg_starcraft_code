@@ -25,18 +25,25 @@ void ECGStarcraftManager::evaluateAction(Message* message)
     build(message);
   else if (strcmp(message->readType(), "gather") == 0)
     gather(message);
+  else if (strcmp(message->readType(), "move") == 0)
+    move(message);
 }
 
 void ECGStarcraftManager::build(Message* message)
 {
   BWAPI::UnitType unitType = message->readUnitType();
   int quantity = message->readQuantity();
-  UnitDescriptor builder = message->readCommandedUnit(); // TODO: Actually use the builder
-  // if (unitType is building) check for a location
 
   for (int i = 0; i < quantity; i++)
   {
-    UAlbertaBot::ProductionManager::Instance().queueHighPriorityUnit(unitType);
+    if (unitType == BWAPI::UnitTypes::Terran_SCV)
+    {
+      FILE * error_file;
+      error_file = fopen("C:/Users/Vivek Raghuram/Desktop/stderr.txt", "a");
+      fprintf(error_file, "Build an SCV!.\n");
+      fclose(error_file);
+    }
+    UAlbertaBot::ProductionManager::Instance().queueLowPriorityUnit(unitType);
   }
 }
 
@@ -51,12 +58,12 @@ void ECGStarcraftManager::gather(Message* message)
     workers = BWAPI::Broodwar->getUnitsInRadius(0, 0, 999999,
         BWAPI::Filter::GetType == BWAPI::UnitTypes::Terran_SCV && BWAPI::Filter::IsIdle && BWAPI::Filter::IsAlly);
   else
-    workers = ECGUtil::resolveUnitDescriptor(commandedUnits);
+    workers = ECGUtil::resolveUnitDescriptor(commandedUnits, BWAPI::Filter::GetType == BWAPI::UnitTypes::Terran_SCV);
 
   if (workers.empty())
     return;
 
-  if (resourceType == Resource::minerals)
+  if (resourceType == Resource::MINERALS)
   {
     for (auto & worker : workers)
     {
@@ -64,7 +71,7 @@ void ECGStarcraftManager::gather(Message* message)
     		UAlbertaBot::WorkerManager::Instance().setMineralWorker(worker);
     }
   }
-  else if (resourceType == Resource::gas)
+  else if (resourceType == Resource::GAS)
   {
     for (auto & worker : workers)
     {
@@ -73,4 +80,14 @@ void ECGStarcraftManager::gather(Message* message)
         UAlbertaBot::WorkerManager::Instance().workerData.setWorkerJob(worker, UAlbertaBot::WorkerData::Gas, refinery);
     }
   }
+}
+
+void ECGStarcraftManager::move(Message* message)
+{
+  UnitDescriptor commandedUnits = message->readCommandedUnit();
+  BWAPI::Position destination = message->readLandmark();
+  BWAPI::Unitset movers = ECGUtil::resolveUnitDescriptor(commandedUnits);
+
+  if (!movers.empty())
+    movers.move(destination);
 }

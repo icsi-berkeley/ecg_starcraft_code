@@ -130,6 +130,8 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
         message["quantity"] = self.get_quantity(obj)
         message["unit_type"] = self.get_type(obj)
 
+        message["ecg_id"] = None # TODO
+
         self.adapter_command(message)
 
     def command_gather(self, parameters):
@@ -138,20 +140,34 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
         """
         message = dict(self.adapter_templates["gather"])
         obj = parameters['resource']['objectDescriptor'] #shouldn't this just be 'descriptor'?
-        message["unit_type"] = self.get_type(obj)
+        message["resource_type"] = "MINERALS" if self.get_type(obj) == 'mineral' else "GAS"
 
         self.adapter_command(message)
+
+    def command_move(self, parameters):
+        """
+        Tells the game to move a unit
+        """
+        message = dict(self.adapter_templates["move"])
+        message["location"] = dict(self.adapter_templates["location_descriptor"])
+        if parameters['spg']['spgDescriptor']['goal']:
+            pass #TODO
+        elif parameters['heading']:
+            message["location"]["region"] = "EXACT"
+            message["location"]["landmark"] = None
+        else:
+            raise RuntimeError("Invalid ActSpec")
+        message["commanded_unit"] = None #TODO
+
+        self.adapter_command(message)
+
+    def command_squad(self, parameters):
+        raise NotImplementedError()
 
     def command_defend(self, parameters):
         raise NotImplementedError()
 
     def command_attack(self, parameters):
-        raise NotImplementedError()
-
-    def command_harrass(self, parameters):
-        raise NotImplementedError()
-
-    def command_explore(self, parameters):
         raise NotImplementedError()
 
     def get_quantity(self, objectDescriptor):
@@ -228,83 +244,102 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
                 continue
             elif choice == "q":
                 return exit()
-            elif choice == "2":
+            elif choice == "2" or choice == "4":
                 # "Mine the minerals!"
                 message = {
                     "type": "gather",
                     "parents": ["action"],
-                    "resource_type": "minerals",
+                    "resource_type": "MINERALS",
                     "commanded_unit": {
                         "type": "unit_descriptor",
                         "quantity": 0,
-                        "unit_name": None,
-                        "unit_type": "scv", # TODO: THIS SHOULD NOT HAVE ANY UNIT SPECIFIED
-                        "ecg_identifier": 0,
-                        "location": None,
-                        "status": "NA",
-                        "ally": True
-                    }
-                }
-            elif choice == "2.1":
-                # "Delta, mine the minerals!"
-                message = {
-                    "type": "gather",
-                    "parents": ["action"],
-                    "resource_type": "minerals",
-                    "commanded_unit": {
-                        "type": "unit_descriptor",
-                        "quantity": 0,
-                        "unit_name": "delta",
-                        "unit_type": "scv",
-                        "ecg_identifier": 0,
+                        "comparator": "GEQ",
+                        "name": None,
+                        "unit_type": None, #NOTE: This used to be "scv" which was too specific
+                        "ecg_id": None,
                         "location": None,
                         "status": "NA",
                         "ally": True
                     }
                 }
             elif choice == "3":
-                # “Build SCVs until I have 8 of them!”
+                # "Harvest the gas!"
                 message = {
-                    "type": "condition",
-                    "trigger": "UNTIL",
-                    "event": {
-                        "type": "army",
-                        "parents": ["event"],
-                        "unit_descriptor": {
-                            "type": "unit_descriptor",
-                            "quantity": 8,
-                            "unit_name": None,
-                            "unit_type": "scv",
-                            "ecg_identifier": 0,
-                            "location": None,
-                            "status": "NA",
-                            "ally": True
-                        }
-                    },
-                    "response": {
-                        "type": "build",
-                        "parents": ["action"],
-                        "quantity": 1,
-                        "unit_type": "scv",
-                        "ecg_identifier": 1,
+                    "type": "gather",
+                    "parents": ["action"],
+                    "resource_type": "GAS",
+                    "commanded_unit": {
+                        "type": "unit_descriptor",
+                        "quantity": 0,
+                        "comparator": "GEQ",
+                        "name": None,
+                        "unit_type": None,
+                        "ecg_id": None,
                         "location": None,
-                        "commanded_unit": None
+                        "status": "NA",
+                        "ally": True
                     }
                 }
-            elif choice == "4":
-                # “Whenever a SCV is idle, make it mine minerals!”
+            elif choice == "5":
+                # "Delta, mine the minerals!"
+                message = {
+                    "type": "gather",
+                    "parents": ["action"],
+                    "resource_type": "MINERALS",
+                    "commanded_unit": {
+                        "type": "unit_descriptor",
+                        "quantity": 0,
+                        "comparator": "GEQ",
+                        "name": "delta",
+                        "unit_type": None,
+                        "ecg_id": None,
+                        "location": None,
+                        "status": "NA",
+                        "ally": True
+                    }
+                }
+            elif choice == "6":
+                # “Build an SCV!”
+                message = {
+                    "type": "build",
+                    "parents": ["action"],
+                    "quantity": 1,
+                    "unit_type": "scv",
+                    "ecg_id": 123456789
+                }
+            elif choice == "7":
+                # “Build 5 marines!”
+                message = {
+                    "type": "build",
+                    "parents": ["action"],
+                    "quantity": 5,
+                    "unit_type": "marine",
+                    "ecg_id": 123456789
+                }
+            elif choice == "8":
+                # “Build a barracks!”
+                message = {
+                    "type": "build",
+                    "parents": ["action"],
+                    "quantity": 1,
+                    "unit_type": "barracks",
+                    "ecg_id": 123456789
+                }
+            elif choice == "26":
+                # “If an SCV is idle, make it mine minerals!”
                 message = {
                     "type": "conditional",
-                    "trigger": "IF",
+                    "trigger": "ALWAYS",
                     "event": {
                         "type": "army",
                         "parents": ["event"],
                         "unit_descriptor": {
                             "type": "unit_descriptor",
-                            "quantity": 0,
-                            "unit_name": None,
+                            "quantity": 1,
+                            "comparator": "GEQ",
+                            "name": None,
                             "unit_type": "scv",
-                            "ecg_identifier": 0,
+                            "ecg_id": None,
                             "location": None,
                             "status": "IDLE",
                             "ally": True
@@ -313,20 +348,21 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
                     "response": {
                         "type": "gather",
                         "parents": ["action"],
-                        "resource_type": "minerals",
+                        "resource_type": "MINERALS",
                         "commanded_unit": {
                             "type": "unit_descriptor",
-                            "quantity": 0,
-                            "unit_name": None,
+                            "quantity": 1,
+                            "comparator": "GEQ",
+                            "name": None,
                             "unit_type": "scv",
-                            "ecg_identifier": 0,
+                            "ecg_id": None,
                             "location": None,
                             "status": "IDLE",
                             "ally": True
                         }
                     }
                 }
-            elif choice == "5":
+            elif choice == "27":
                 # “Build SCVs until I have 8 of them!”
                 message = {
                     "type": "conditional",
@@ -337,9 +373,10 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
                         "unit_descriptor": {
                             "type": "unit_descriptor",
                             "quantity": 8,
-                            "unit_name": None,
+                            "comparator": "GEQ",
+                            "name": None,
                             "unit_type": "scv",
-                            "ecg_identifier": 0,
+                            "ecg_id": None,
                             "location": None,
                             "status": "NA",
                             "ally": True
@@ -350,9 +387,7 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
                         "parents": ["action"],
                         "quantity": 1,
                         "unit_type": "scv",
-                        "ecg_identifier": 0,
-                        "location": None,
-                        "commanded_unit": None
+                        "ecg_id": 0
                     }
                 }
             else:
@@ -366,4 +401,4 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
 if __name__ == "__main__":
     solver = BasicStarcraftProblemSolver(sys.argv[1:])
     solver.adapter_connect()
-    solver.temporary_hack()
+    # solver.temporary_hack()

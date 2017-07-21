@@ -1,80 +1,91 @@
 is_started
-A special template used to ask the game if it has begun. Until the game is confirmed to have
-started, all commands are saved in the problem solver.
+  A special template used to ask the game if it has begun. Until the game is confirmed to have
+  started, all commands are saved in the problem solver.
 
 Control Templates:
 These templates are the basis of valid messages.
 
-conditional
-A pairing of a control template with an event template. The response should trigger ONCE upon an
-event, trigger repeatedly WHILE an event occurs for the first time, trigger repeatedly UNTIL an
-event occurs for the first time, or ALWAYS trigger when the event ever occurs.
+  conditional
+    A pairing of a control template with an event template. The response should trigger ONCE upon an
+    event, trigger repeatedly WHILE an event occurs for the first time, trigger repeatedly UNTIL an
+    event occurs for the first time, or ALWAYS trigger when the event ever occurs.
 
-sequential
-A pairing of a control template with another control template. The orders specified by the first
-template should occur before the orders specified by the second template.
+  sequential
+    A pairing of a control template with another control template. The orders specified by the first
+    template should occur before the orders specified by the second template.
 
-action
-General class of templates that always involves a command to some unit or set of units
-(commanded_unit).
+  action
+    General class of templates that always involves a command to some unit or set of units
+    (commanded_unit).
 
 Action Templates:
-Inherit from the action template.
+  Inherit from the action template.
 
-build
-Required to specify which unit type to build, a quantity and a ecg identifier. If the quantity is
-x > 1, then it is assumed that the identifiers will be id, id + 1, id + 2....id + x - 1. Can
-optionally which unit should build it. For buildings can optionally specify the location of a
-building.
+  build
+    Required to specify which unit type to build, a quantity and an ecg_id.
+    NOT IMPLEMENTED: Specify which unit should build it and/or where it should be built.
 
-gather
-Required to specify which resource resource type to gather. Optionally can specify which units or
-set of units should perform the action.
+  gather
+    Required to specify which resource resource type to gather. Optionally can specify which units
+    should perform the action. If none are specified, selected or idle workers will perform the
+    action.
 
-move
-Required to specify a location and which units should perform the action.
+  move
+    Required to specify a location and optionally which units should perform the action. If none are
+    specified, selected units will move or no action will occur.
 
-attack
-Required to specify which units should perform the action as well as specifying a target, be it
-units or a location.
+  join_squad
+    Optionally specify set_one and set_two. If both are specified, then units matching the sets will
+    form a squad. If only set_one is specified, then units matching set_one and any selected units
+    will form a squad. If neither is specified then selected units will form a squad.
 
-defend
-Required to specify which units should perform the action as well as specifying a target, be it
-units or a location.
+  attack
+    Optionally specify which units should perform the action as well as specifying a target, be it
+    units or a location. If not provided, all combat units or selected units will attack and the
+    enemy base will be attacked.
+
+  defend
+    Optionally specify which units should perform the action as well as specifying a target, be it
+    units or a location. If not provided, all combat units or selected units will defend and the
+    command center region will be defended.
 
 Event Templates:
-event
-General class of templates that always involves an attribute of the game state. A solitary event
-template is not a valid message.
+  event
+    General class of templates that always involves an attribute of the game state. A solitary event
+    template is not a valid message.
 
-army
-A template for the event of having a certain class of units in the army. It is required to specify
-the units.
+  army
+    A template for the event of having a certain class of units in the army. It is required to
+    specify the unit_descriptor.
 
-resources
-A template for the event of having a certain resource state. It is required to specify the resource
-type, a value for that resource and whether the comparator is greater, less or equal to the value.
-A value of -1 for supply refers to the maximum supply. A value of -X for supply refers
-to X-1 less than the maximum supply.
+  resources
+    A template for the event of having a certain resource state. It is required to specify the
+    resource type, a value for that resource and whether the comparator is GEQ, LEQ or EQ to the
+    value. A value of -1 for supply refers to the maximum supply. A value of -X for supply refers
+    to X-1 less than the maximum supply.
 
-construction
-A template for the event of having a completed constructing a certain unit. It is required to
-specify the units and will typically do so via the ecg identifier.
+  destruction
+    A template for the event of units being destroyed. It is required to specify the unit_descriptor.
 
 
 Descriptor Templates:
-Templates for describing common bits of information used in other templates.
+  Templates for describing common bits of information used in other templates.
 
-location
-Required to specify the position relative to the landmark. Optionally specify a unit/building as a
-landmark. If no landmark is given, then the user's mouse position will be used as the landmark.
+  location
+    Required to specify the position relative to the landmark. Optionally specify a unit/building as a
+    landmark. If no landmark is given, then the user's mouse position will be used as the landmark.
 
-units
-Required to specify one of the fields. The quantity determines how many of the specified class of
-units. A quantity of <=0 means all units that match the class of units (could potentially be none).
-The unit name provides a unique identifier to a completed unit. The ecg identifier provides a
-unique identification to a unit that is referred to elsewhere in the command. A ecg identifier of 0
-means not set. If the quantity is x > 1, then it is assumed that the identifiers will be id, id + 1,
-id + 2....id + x - 1. The identifier is assigned by the problem solver as needed. The location
-provides a location to find the units. The unit status provides the current action of the unit. If
-unknown then status is set to NA.
+  units
+    Required to specify the quantity which in conjunction with comparator, determines how many of
+    the specified class of units there should be. The GEQ comparator means to only match sets of
+    size >= quantity. The LEQ comparator means to match only match sets of size <= quantity. The EQ
+    comparator means to match sets up to size = quantity and to prune larger sets when possible.
+
+    The name provides a unique identifier to a completed unit or squad. The ecg_id provides a
+    unique identification to a unit that is referred to in a build action.
+
+    The unit_type gives information for filtering on unit type. The status gives information for
+    filtering on status of unit, or NA if no filter. The ally boolean allows filtering for allied
+    units as opposed to enemy units. If the language does not specify enemy, then ally is assumed.
+
+    The location, if supplied, provides a location to find the units in.

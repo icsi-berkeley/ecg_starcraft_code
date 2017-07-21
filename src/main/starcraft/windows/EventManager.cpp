@@ -6,15 +6,15 @@ using namespace ECGBot;
 
 ArmyEvent::ArmyEvent(UnitDescriptor ud, Message* ac, EventKind ek) {
   units = ud; nextAction = ac; kind = ek;
-};
+}
 
 ResourceEvent::ResourceEvent(Resource r, int t, Comparator c, Message* ac, EventKind ek) {
   resource = r; threshold = t; comparator = c; nextAction = ac; kind = ek;
-};
+}
 
 LocationEvent::LocationEvent(UnitDescriptor ud, BWAPI::Position pos, Region reg, Message* ac, EventKind ek) {
   units = ud; position = pos; region = reg; nextAction = ac; kind = ek;
-};
+}
 
 EventManager::EventManager()
 {
@@ -59,7 +59,7 @@ void EventManager::registerArmyEvent(Message* event, Message* response, EventKin
 void EventManager::registerResourceEvent(Message* event, Message* response, EventKind kind)
 {
   BWAPI::Broodwar->sendText("Registering resource event");
-  ResourceEvent* newEvent = new ResourceEvent(event->readResourceEnum(), event->readThreshold(), event->readComparator(), response, kind);
+  ResourceEvent* newEvent = new ResourceEvent(event->readResourceType(), event->readThreshold(), event->readComparator(), response, kind);
   resourceEventList.push_back(newEvent);
   delete event;
 }
@@ -75,20 +75,20 @@ void EventManager::registerLocationEvent(Message* event, Message* response, Even
 bool EventManager::checkArmyEvent(ArmyEvent* event)
 {
   BWAPI::Unitset matchedSet = ECGUtil::resolveUnitDescriptor(event->units);
-  return !matchedSet.empty() && matchedSet.size() >= event->units.quantity;
+  return !matchedSet.empty();
 }
 
 bool EventManager::checkResourceEvent(ResourceEvent* event)
 {
   int value;
   switch (event->resource) {
-    case Resource::supply:
+    case Resource::SUPPLY:
       value = BWAPI::Broodwar->self()->supplyUsed();
       break;
-    case Resource::minerals:
+    case Resource::MINERALS:
       value = BWAPI::Broodwar->self()->minerals();
       break;
-    case Resource::gas:
+    case Resource::GAS:
       value = BWAPI::Broodwar->self()->gas();
       break;
     default:
@@ -96,11 +96,11 @@ bool EventManager::checkResourceEvent(ResourceEvent* event)
   }
 
   switch(event->comparator) {
-    case Comparator::greater:
+    case Comparator::GEQ:
       return value > event->threshold;
-    case Comparator::less:
+    case Comparator::LEQ:
       return value < event->threshold;
-    case Comparator::equal:
+    case Comparator::EQ:
       return value == event->threshold;
   }
   return false;

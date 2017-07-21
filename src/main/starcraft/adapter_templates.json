@@ -3,49 +3,61 @@
     "is_started": {
       "type": "is_started"
     },
+
     "conditional": {
       "type": "conditional",
-      "trigger": "MC:ONCE|WHILE|UNTIL|IF",
+      "trigger": "MC:ONCE|WHILE|UNTIL|ALWAYS",
       "event": "*OBJECT:event",
       "response": "*OBJECT:action|condition|sequential"
     },
+
     "sequential": {
       "type": "sequential",
       "first": "*OBJECT:action|condition|sequential",
       "second": "*OBJECT:action|condition|sequential"
     },
+
     "action": {
-      "type": "action",
-      "commanded_unit": "OBJECT:unit_descriptor"
+      "type": "action"
     },
     "build": {
       "type": "build",
       "parents": ["action"],
       "quantity": "*INTEGER",
       "unit_type": "*STRING",
-      "ecg_identifier": "*INTEGER",
-      "location": "OBJECT:location_descriptor"
+      "ecg_id": "*INTEGER"
     },
     "gather": {
       "type": "gather",
       "parents": ["action"],
-      "resource_type": "MC:gas|minerals"
+      "resource_type": "MC:GAS|MINERALS",
+      "commanded_unit": "OBJECT:unit_descriptor"
     },
     "move": {
       "type": "move",
       "parents": ["action"],
-      "location": "*OBJECT:location_descriptor"
+      "location": "*OBJECT:location_descriptor",
+      "commanded_unit": "OBJECT:unit_descriptor"
+    },
+    "join_squad": {
+      "type": "join_squad",
+      "parents": ["action"],
+      "set_one": "OBJECT:unit_descriptor",
+      "set_two": "OBJECT:unit_descriptor"
     },
     "attack": {
       "type": "attack",
       "parents": ["action"],
-      "target": "*OBJECT:location_descriptor|unit_descriptor"
+      "target": "OBJECT:location_descriptor|unit_descriptor",
+      "commanded_unit": "OBJECT:unit_descriptor"
     },
     "defend": {
       "type": "defend",
       "parents": ["action"],
-      "target": "*OBJECT:location_descriptor|unit_descriptor"
+      "target": "*OBJECT:location_descriptor|unit_descriptor",
+      "commanded_unit": "OBJECT:unit_descriptor"
     },
+
     "event": {
       "type": "event"
     },
@@ -57,21 +69,16 @@
     "resource": {
       "type": "resource",
       "parents": ["event"],
-      "resource_enum": "MC:supply|gas|minerals",
+      "resource_type": "MC:SUPPLY|GAS|MINERALS",
       "threshold": "*INTEGER",
-      "comparator": "MC:GREATER|LESS|EQUAL"
+      "comparator": "MC:EQ|GEQ|LEQ"
     },
-    "construction": {
-      "type": "construction",
+    "destruction": {
+      "type": "destruction",
       "parents": ["event"],
       "unit_descriptor": "*OBJECT:unit_descriptor"
     },
-    "location": {
-      "type": "location",
-      "parents": ["event"],
-      "location_descriptor": "*OBJECT:location_descriptor",
-      "unit_descriptor": "*OBJECT:unit_descriptor"
-    },
+
     "location_descriptor": {
       "type": "location_descriptor",
       "landmark": "OBJECT:unit_descriptor",
@@ -80,11 +87,12 @@
     "unit_descriptor": {
       "type": "unit_descriptor",
       "quantity": "*INTEGER",
+      "comparator": "MC:EQ|GEQ|LEQ",
       "unit_type": "STRING",
-      "unit_name": "STRING",
-      "ecg_identifier": "*INTEGER",
+      "name": "STRING",
+      "ecg_id": "INTEGER",
       "location": "OBJECT:location_descriptor",
-      "status": "MC:IDLE|ATTACKING|DEFENDING|GATHERING|EXPLORING|HARASSING|BUILDING|NA",
+      "status": "MC:IDLE|GATHERING|BUILDING|UNDERATTACK|ATTACKING|DEFENDING|NA",
       "ally": "*BOOLEAN"
     }
   }
