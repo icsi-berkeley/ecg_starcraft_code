@@ -96,7 +96,10 @@ public:
     BWAPI::Unitset matchedSet;
     // Use Identifiers
 		if (ud.unitID > 0)
+    {
 			matchedSet.insert(BWAPI::Broodwar->getUnit(ud.unitID));
+      return matchedSet;
+    }
 		//else if (ud.ecgID > 0)
 		  // TODO: Do something with the ECGidentifier
 
@@ -224,6 +227,29 @@ public:
 
   static BWAPI::Position ECGUtil::getMousePosition() {
     return (BWAPI::Broodwar->getScreenPosition() + BWAPI::Broodwar->getMousePosition()).makeValid();
+  }
+
+  static BWAPI::Position ECGUtil::resolveLocation(Region region, BWAPI::Position landmark)
+  {
+    BWAPI::Position destination;
+    switch(region)
+    {
+      case Region::RIGHT:
+        destination = landmark + BWAPI::Position(100, 0);
+        break;
+      case Region::LEFT:
+        destination = landmark + BWAPI::Position(-100, 0);
+        break;
+      case Region::BACK:
+        destination = landmark + BWAPI::Position(0, -100);
+        break;
+      case Region::FRONT:
+        destination = landmark + BWAPI::Position(0, 100);
+        break;
+      default:
+        destination = landmark;
+    }
+    return destination.makeValid();
   }
 
 };

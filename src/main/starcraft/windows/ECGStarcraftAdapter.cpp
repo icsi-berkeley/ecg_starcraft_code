@@ -120,39 +120,47 @@ void ECGStarcraftAdapter::onUnitEvade(BWAPI::Unit unit) {}
 
 void ECGStarcraftAdapter::onUnitShow(BWAPI::Unit unit)
 {
-  //UAlbertaBot::InformationManager::Instance().onUnitShow(unit); // TODO:albertanewversionfix
-  //UAlbertaBot::WorkerManager::Instance().onUnitShow(unit); // TODO:albertanewversionfix
+  _unitInfoManager.onUnitShow(unit);
+	_workerManager.onUnitShow(unit);
   NameManager::Instance().onUnitShow(unit);
 }
 
 void ECGStarcraftAdapter::onUnitHide(BWAPI::Unit unit)
 {
-  //UAlbertaBot::InformationManager::Instance().onUnitHide(unit); // TODO:albertanewversionfix
+  _unitInfoManager.onUnitHide(unit);
 }
 
 void ECGStarcraftAdapter::onUnitCreate(BWAPI::Unit unit)
 {
   NameManager::Instance().onUnitCreate(unit);
-  //UAlbertaBot::InformationManager::Instance().onUnitCreate(unit); // TODO:albertanewversionfix
+  _unitInfoManager.onUnitCreate(unit);
 }
 
 void ECGStarcraftAdapter::onUnitDestroy(BWAPI::Unit unit)
 {
   // TODO: Remove the unit label
-  //UAlbertaBot::ProductionManager::Instance().onUnitDestroy(unit); // TODO:albertanewversionfix
-  //UAlbertaBot::WorkerManager::Instance().onUnitDestroy(unit); // TODO:albertanewversionfix
-  //UAlbertaBot::InformationManager::Instance().onUnitDestroy(unit); // TODO:albertanewversionfix
+  _workerManager.onUnitDestroy(unit);
+	_unitInfoManager.onUnitDestroy(unit);
+  _productionManager.onUnitDestroy(unit);
+
 }
 
-void ECGStarcraftAdapter::onUnitMorph(BWAPI::Unit unit) {}
+void ECGStarcraftAdapter::onUnitMorph(BWAPI::Unit unit)
+{
+  _unitInfoManager.onUnitMorph(unit);
+	_workerManager.onUnitMorph(unit);
+}
 
-void ECGStarcraftAdapter::onUnitRenegade(BWAPI::Unit unit) {}
+void ECGStarcraftAdapter::onUnitRenegade(BWAPI::Unit unit)
+{
+  _unitInfoManager.onUnitRenegade(unit);
+}
 
 void ECGStarcraftAdapter::onSaveGame(std::string gameName) {}
 
 void ECGStarcraftAdapter::onUnitComplete(BWAPI::Unit unit)
 {
-  //UAlbertaBot::InformationManager::Instance().onUnitComplete(unit); // TODO:albertanewversionfix
+  _unitInfoManager.onUnitComplete(unit);
 }
 
 UAlbertaBot::WorkerManager & ECGStarcraftAdapter::Workers()

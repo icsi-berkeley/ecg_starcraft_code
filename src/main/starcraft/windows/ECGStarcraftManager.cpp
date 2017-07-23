@@ -33,7 +33,7 @@ void ECGStarcraftManager::build(Message* message)
   int quantity = message->readQuantity();
 
   for (int i = 0; i < quantity; i++)
-    UAlbertaBot::Global::Production().queueLowPriorityUnit(unitType); //TODO:albertanewversionfix
+    UAlbertaBot::Global::Production().queueLowPriorityUnit(unitType);
 }
 
 void ECGStarcraftManager::gather(Message* message)
@@ -57,7 +57,7 @@ void ECGStarcraftManager::gather(Message* message)
     for (auto & worker : workers)
     {
       if (worker->canGather())
-    		UAlbertaBot::Global::Workers().setMineralWorker(worker); //TODO:albertanewversionfix
+    		UAlbertaBot::Global::Workers().setMineralWorker(worker);
     }
   }
   else if (resourceType == Resource::GAS)
@@ -66,7 +66,7 @@ void ECGStarcraftManager::gather(Message* message)
     {
       BWAPI::Unit refinery = worker->getClosestUnit(BWAPI::Filter::IsRefinery && BWAPI::Filter::IsOwned);
       if (refinery && worker->canGather())
-        UAlbertaBot::Global::Workers().setWorkerJob(worker, UAlbertaBot::WorkerData::Gas, refinery); //TODO:albertanewversionfix
+        UAlbertaBot::Global::Workers().setWorkerJob(worker, UAlbertaBot::WorkerData::Gas, refinery);
     }
   }
 }
@@ -74,8 +74,11 @@ void ECGStarcraftManager::gather(Message* message)
 void ECGStarcraftManager::move(Message* message)
 {
   UnitDescriptor commandedUnits = message->readCommandedUnit();
-  BWAPI::Position destination = message->readLandmark();
+  BWAPI::Position landmark = message->readLandmark();
+  Region region = message->readRegion();
   BWAPI::Unitset movers = ECGUtil::resolveUnitDescriptor(commandedUnits);
+
+  BWAPI::Position destination = ECGUtil::resolveLocation(region, landmark);
 
   if (!movers.empty())
     movers.move(destination);

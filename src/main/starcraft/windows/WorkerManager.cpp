@@ -12,8 +12,8 @@ WorkerManager::WorkerManager()
 void WorkerManager::update()
 {
 	updateWorkerStatus();
-	handleGasWorkers();
-	handleIdleWorkers();
+	// handleGasWorkers();
+	// handleIdleWorkers();
 	handleMoveWorkers();
 	handleCombatWorkers();
 
@@ -22,7 +22,7 @@ void WorkerManager::update()
   //
 	// workerData.drawDepotDebugInfo();
 
-    handleRepairWorkers();
+    // handleRepairWorkers();
 }
 
 void WorkerManager::updateWorkerStatus()
@@ -52,7 +52,8 @@ void WorkerManager::updateWorkerStatus()
 			// if the refinery doesn't exist anymore
 			if (!refinery || !refinery->exists() ||	refinery->getHitPoints() <= 0)
 			{
-				setMineralWorker(worker);
+				//setMineralWorker(worker);
+        workerData.setWorkerJob(worker, WorkerData::Idle, nullptr);
 			}
 		}
 	}

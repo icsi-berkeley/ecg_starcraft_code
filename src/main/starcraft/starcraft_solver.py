@@ -362,6 +362,120 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
                         }
                     }
                 }
+            elif choice == "11":
+                # "Delta, move over here!"
+                message = {
+                    "type": "move",
+                    "parents": ["action"],
+                    "location": {
+                        "type": "location_descriptor",
+                        "landmark": None,
+                        "region": "EXACT"
+                    },
+                    "commanded_unit": {
+                        "type": "unit_descriptor",
+                        "quantity": 0,
+                        "comparator": "GEQ",
+                        "name": "delta",
+                        "unit_type": None,
+                        "ecg_id": None,
+                        "location": None,
+                        "status": "NA",
+                        "ally": True
+                    }
+                }
+            elif choice == "12":
+                # Delta, move behind the barracks!
+                message = {
+                    "type": "move",
+                    "parents": ["action"],
+                    "location": {
+                        "type": "location_descriptor",
+                        "landmark": {
+                            "type": "unit_descriptor",
+                            "quantity": 1,
+                            "comparator": "GEQ",
+                            "name": None,
+                            "unit_type": "barracks",
+                            "ecg_id": None,
+                            "location": None,
+                            "status": "NA",
+                            "ally": True
+                        },
+                        "region": "BACK"
+                    },
+                    "commanded_unit": {
+                        "type": "unit_descriptor",
+                        "quantity": 0,
+                        "comparator": "GEQ",
+                        "name": "delta",
+                        "unit_type": None,
+                        "ecg_id": None,
+                        "location": None,
+                        "status": "NA",
+                        "ally": True
+                    }
+                }
+            elif choice == "13":
+                # Move behind the barracks!
+                message = {
+                    "type": "move",
+                    "parents": ["action"],
+                    "location": {
+                        "type": "location_descriptor",
+                        "landmark": {
+                            "type": "unit_descriptor",
+                            "quantity": 1,
+                            "comparator": "GEQ",
+                            "name": None,
+                            "unit_type": "barracks",
+                            "ecg_id": None,
+                            "location": None,
+                            "status": "NA",
+                            "ally": True
+                        },
+                        "region": "BACK"
+                    },
+                    "commanded_unit": None
+                }
+            elif choice == "14":
+                # Move here!
+                message = {
+                    "type": "move",
+                    "parents": ["action"],
+                    "location": {
+                        "type": "location_descriptor",
+                        "landmark": None,
+                        "region": "EXACT"
+                    },
+                    "commanded_unit": None
+                }
+            elif choice == "15":
+                # Move the 5 closest marines here!
+                message = {
+                    "type": "move",
+                    "parents": ["action"],
+                    "location": {
+                        "type": "location_descriptor",
+                        "landmark": None,
+                        "region": "EXACT"
+                    },
+                    "commanded_unit": {
+                        "type": "unit_descriptor",
+                        "quantity": 5,
+                        "comparator": "EQ",
+                        "name": None,
+                        "unit_type": "marine",
+                        "ecg_id": None,
+                        "location": {
+                            "type": "location_descriptor",
+                            "landmark": None,
+                            "region": "CLOSE"
+                        },
+                        "status": "NA",
+                        "ally": True
+                    }
+                }
             elif choice == "27":
                 # “Build SCVs until I have 8 of them!”
                 message = {

@@ -58,15 +58,15 @@ void ProductionManager::update()
 	manageBuildOrderQueue();
 
 	// if nothing is currently building, get a new goal from the strategy manager
-	if ((_queue.size() == 0) && (BWAPI::Broodwar->getFrameCount() > 10))
-	{
-        if (Config::Debug::DrawBuildOrderSearchInfo)
-        {
-		    BWAPI::Broodwar->drawTextScreen(150, 10, "Nothing left to build, new search!");
-        }
-
-		performBuildOrderSearch();
-	}
+	// if ((_queue.size() == 0) && (BWAPI::Broodwar->getFrameCount() > 10))
+	// {
+  //       if (Config::Debug::DrawBuildOrderSearchInfo)
+  //       {
+	// 	    BWAPI::Broodwar->drawTextScreen(150, 10, "Nothing left to build, new search!");
+  //       }
+	//
+	// 	performBuildOrderSearch();
+	// }
 
 	// detect if there's a build order deadlock once per second
 	if ((BWAPI::Broodwar->getFrameCount() % 24 == 0) && detectBuildOrderDeadlock())
@@ -79,42 +79,42 @@ void ProductionManager::update()
 	}
 
 	// if they have cloaked units get a new goal asap
-	if (!_enemyCloakedDetected && Global::UnitInfo().enemyHasCloakedUnits())
-	{
-        if (BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Protoss)
-        {
-		    if (BWAPI::Broodwar->self()->allUnitCount(BWAPI::UnitTypes::Protoss_Photon_Cannon) < 2)
-		    {
-			    _queue.queueAsHighestPriority(MetaType(BWAPI::UnitTypes::Protoss_Photon_Cannon), true);
-			    _queue.queueAsHighestPriority(MetaType(BWAPI::UnitTypes::Protoss_Photon_Cannon), true);
-		    }
-
-		    if (BWAPI::Broodwar->self()->allUnitCount(BWAPI::UnitTypes::Protoss_Forge) == 0)
-		    {
-			    _queue.queueAsHighestPriority(MetaType(BWAPI::UnitTypes::Protoss_Forge), true);
-		    }
-        }
-        else if (BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Terran)
-        {
-            if (BWAPI::Broodwar->self()->allUnitCount(BWAPI::UnitTypes::Terran_Missile_Turret) < 2)
-		    {
-			    _queue.queueAsHighestPriority(MetaType(BWAPI::UnitTypes::Terran_Missile_Turret), true);
-			    _queue.queueAsHighestPriority(MetaType(BWAPI::UnitTypes::Terran_Missile_Turret), true);
-		    }
-
-		    if (BWAPI::Broodwar->self()->allUnitCount(BWAPI::UnitTypes::Terran_Engineering_Bay) == 0)
-		    {
-			    _queue.queueAsHighestPriority(MetaType(BWAPI::UnitTypes::Terran_Engineering_Bay), true);
-		    }
-        }
-
-        if (Config::Debug::DrawBuildOrderSearchInfo)
-        {
-		    BWAPI::Broodwar->printf("Enemy Cloaked Unit Detected!");
-        }
-
-		_enemyCloakedDetected = true;
-	}
+	// if (!_enemyCloakedDetected && Global::UnitInfo().enemyHasCloakedUnits())
+	// {
+  //       if (BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Protoss)
+  //       {
+	// 	    if (BWAPI::Broodwar->self()->allUnitCount(BWAPI::UnitTypes::Protoss_Photon_Cannon) < 2)
+	// 	    {
+	// 		    _queue.queueAsHighestPriority(MetaType(BWAPI::UnitTypes::Protoss_Photon_Cannon), true);
+	// 		    _queue.queueAsHighestPriority(MetaType(BWAPI::UnitTypes::Protoss_Photon_Cannon), true);
+	// 	    }
+	//
+	// 	    if (BWAPI::Broodwar->self()->allUnitCount(BWAPI::UnitTypes::Protoss_Forge) == 0)
+	// 	    {
+	// 		    _queue.queueAsHighestPriority(MetaType(BWAPI::UnitTypes::Protoss_Forge), true);
+	// 	    }
+  //       }
+  //       else if (BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Terran)
+  //       {
+  //           if (BWAPI::Broodwar->self()->allUnitCount(BWAPI::UnitTypes::Terran_Missile_Turret) < 2)
+	// 	    {
+	// 		    _queue.queueAsHighestPriority(MetaType(BWAPI::UnitTypes::Terran_Missile_Turret), true);
+	// 		    _queue.queueAsHighestPriority(MetaType(BWAPI::UnitTypes::Terran_Missile_Turret), true);
+	// 	    }
+	//
+	// 	    if (BWAPI::Broodwar->self()->allUnitCount(BWAPI::UnitTypes::Terran_Engineering_Bay) == 0)
+	// 	    {
+	// 		    _queue.queueAsHighestPriority(MetaType(BWAPI::UnitTypes::Terran_Engineering_Bay), true);
+	// 	    }
+  //       }
+	//
+  //       if (Config::Debug::DrawBuildOrderSearchInfo)
+  //       {
+	// 	    BWAPI::Broodwar->printf("Enemy Cloaked Unit Detected!");
+  //       }
+	//
+	// 	_enemyCloakedDetected = true;
+	// }
 
     _buildingManager.update();
 }
@@ -162,11 +162,11 @@ void ProductionManager::manageBuildOrderQueue()
 		bool canMake = canMakeNow(producer, currentItem.metaType);
 
 		// if we try to build too many refineries manually remove it
-		if (currentItem.metaType.isRefinery() && (BWAPI::Broodwar->self()->allUnitCount(BWAPI::Broodwar->self()->getRace().getRefinery() >= 3)))
-		{
-			_queue.removeCurrentHighestPriorityItem();
-			break;
-		}
+		// if (currentItem.metaType.isRefinery() && (BWAPI::Broodwar->self()->allUnitCount(BWAPI::Broodwar->self()->getRace().getRefinery() >= 3)))
+		// {
+		// 	_queue.removeCurrentHighestPriorityItem();
+		// 	break;
+		// }
 
 		// if the next item in the list is a building and we can't yet make it
         if (currentItem.metaType.isBuilding() && !(producer && canMake) && currentItem.metaType.whatBuilds().isWorker())
