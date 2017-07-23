@@ -401,4 +401,4 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
 if __name__ == "__main__":
     solver = BasicStarcraftProblemSolver(sys.argv[1:])
     solver.adapter_connect()
-    # solver.temporary_hack()
+    solver.temporary_hack()

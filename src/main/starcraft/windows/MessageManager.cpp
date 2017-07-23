@@ -1,12 +1,9 @@
 #include "MessageManager.h"
-#include "InformationManager.h"
-#include "UnitData.h"
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
 #include "TransportBridge.h"
 #include "ECGUtil.h"
-#include "BWTA.h"
 
 using namespace ECGBot;
 

@@ -1,4 +1,5 @@
 #include "UnitUtil.h"
+#include "UABAssert.h"
 
 using namespace UAlbertaBot;
 
@@ -10,23 +11,53 @@ bool UnitUtil::IsCombatUnit(BWAPI::Unit unit)
         return false;
     }
 
-    // no workers or buildings allowed
-    if (unit && unit->getType().isWorker() || unit->getType().isBuilding())
-    {
-        return false;
-    }
+    return IsCombatUnitType(unit->getType());
 
+}
+
+bool UnitUtil::IsCombatUnitType(BWAPI::UnitType type)
+{
     // check for various types of combat units
-    if (unit->getType().canAttack() ||
-        unit->getType() == BWAPI::UnitTypes::Terran_Medic ||
-        unit->getType() == BWAPI::UnitTypes::Protoss_High_Templar ||
-        unit->getType() == BWAPI::UnitTypes::Protoss_Observer ||
-        unit->isFlying() && unit->getType().spaceProvided() > 0)
+    if (type.canAttack() ||
+        type == BWAPI::UnitTypes::Terran_Medic ||
+        type == BWAPI::UnitTypes::Protoss_High_Templar ||
+        type == BWAPI::UnitTypes::Protoss_Observer ||
+        type == BWAPI::UnitTypes::Zerg_Overlord ||
+        type == BWAPI::UnitTypes::Protoss_Observer)
     {
         return true;
     }
 
+    // no workers or buildings allowed
+    if (type.isWorker() || type.isBuilding())
+    {
+        return false;
+    }
+
     return false;
+}
+
+BWAPI::Position UnitUtil::GetUnitsetCenter(const std::vector<BWAPI::Unit> & cluster)
+{
+    int sumX = 0;
+    int sumY = 0;
+
+    for (const auto & resource : cluster)
+    {
+        sumX += resource->getPosition().x;
+        sumY += resource->getPosition().y;
+    }
+
+    return BWAPI::Position(sumX / cluster.size(), sumY / cluster.size());
+}
+
+bool UnitUtil::IsMorphedBuildingType(BWAPI::UnitType type)
+{
+    return  type == BWAPI::UnitTypes::Zerg_Sunken_Colony ||
+            type == BWAPI::UnitTypes::Zerg_Spore_Colony ||
+            type == BWAPI::UnitTypes::Zerg_Lair ||
+            type == BWAPI::UnitTypes::Zerg_Hive ||
+            type == BWAPI::UnitTypes::Zerg_Greater_Spire;
 }
 
 bool UnitUtil::IsValidUnit(BWAPI::Unit unit)
@@ -78,7 +109,7 @@ double UnitUtil::GetDistanceBetweenTwoRectangles(Rect & rect1, Rect & rect2)
 
 bool UnitUtil::CanAttack(BWAPI::Unit attacker, BWAPI::Unit target)
 {
-    return GetWeapon(attacker, target) != BWAPI::UnitTypes::None;
+    return GetWeapon(attacker, target) != BWAPI::WeaponTypes::None;
 }
 
 bool UnitUtil::CanAttackAir(BWAPI::Unit unit)

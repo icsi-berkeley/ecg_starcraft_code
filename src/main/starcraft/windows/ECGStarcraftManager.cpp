@@ -1,10 +1,8 @@
 #include "ECGStarcraftManager.h"
 #include "ECGUtil.h"
-#include "BWTA.h"
-#include "WorkerManager.h"
-#include "ProductionManager.h"
 #include "Message.h"
 #include "MessageManager.h"
+#include "Global.h"
 
 using namespace ECGBot;
 
@@ -35,16 +33,7 @@ void ECGStarcraftManager::build(Message* message)
   int quantity = message->readQuantity();
 
   for (int i = 0; i < quantity; i++)
-  {
-    if (unitType == BWAPI::UnitTypes::Terran_SCV)
-    {
-      FILE * error_file;
-      error_file = fopen("C:/Users/Vivek Raghuram/Desktop/stderr.txt", "a");
-      fprintf(error_file, "Build an SCV!.\n");
-      fclose(error_file);
-    }
-    UAlbertaBot::ProductionManager::Instance().queueLowPriorityUnit(unitType);
-  }
+    UAlbertaBot::Global::Production().queueLowPriorityUnit(unitType); //TODO:albertanewversionfix
 }
 
 void ECGStarcraftManager::gather(Message* message)
@@ -68,7 +57,7 @@ void ECGStarcraftManager::gather(Message* message)
     for (auto & worker : workers)
     {
       if (worker->canGather())
-    		UAlbertaBot::WorkerManager::Instance().setMineralWorker(worker);
+    		UAlbertaBot::Global::Workers().setMineralWorker(worker); //TODO:albertanewversionfix
     }
   }
   else if (resourceType == Resource::GAS)
@@ -77,7 +66,7 @@ void ECGStarcraftManager::gather(Message* message)
     {
       BWAPI::Unit refinery = worker->getClosestUnit(BWAPI::Filter::IsRefinery && BWAPI::Filter::IsOwned);
       if (refinery && worker->canGather())
-        UAlbertaBot::WorkerManager::Instance().workerData.setWorkerJob(worker, UAlbertaBot::WorkerData::Gas, refinery);
+        UAlbertaBot::Global::Workers().setWorkerJob(worker, UAlbertaBot::WorkerData::Gas, refinery); //TODO:albertanewversionfix
     }
   }
 }

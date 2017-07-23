@@ -1,5 +1,8 @@
 #pragma once
 #include <BWAPI.h>
+#include "CombatCommander.h"
+#include "ProductionManager.h"
+#include "Global.h"
 
 // Remember not to use "Broodwar" in any global class constructor!
 
@@ -28,7 +31,21 @@ public:
   virtual void onSaveGame(std::string gameName);
   virtual void onUnitComplete(BWAPI::Unit unit);
   // Everything below this line is safe to modify.
+  UAlbertaBot::WorkerManager & Workers();
+  UAlbertaBot::ProductionManager & Production();
+  const UAlbertaBot::UnitInfoManager & UnitInfo() const;
+  const UAlbertaBot::StrategyManager & Strategy() const;
+  const UAlbertaBot::BaseLocationManager & Bases() const;
+  const UAlbertaBot::MapTools & Map() const;
 private:
+  UAlbertaBot::WorkerManager       _workerManager;
+  UAlbertaBot::UnitInfoManager     _unitInfoManager;
+  UAlbertaBot::StrategyManager     _strategyManager;
+  UAlbertaBot::MapTools            _mapTools;
+  UAlbertaBot::BaseLocationManager _baseLocationManager;
+  UAlbertaBot::CombatCommander     _combatCommander;
+  UAlbertaBot::ProductionManager   _productionManager;
+
 
 };
 

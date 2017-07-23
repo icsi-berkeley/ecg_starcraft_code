@@ -1,6 +1,6 @@
 #include "Common.h"
 #include "BuildingPlacer.h"
-#include "MapGrid.h"
+#include "Global.h"
 
 using namespace UAlbertaBot;
 
@@ -15,16 +15,10 @@ BuildingPlacer::BuildingPlacer()
     computeResourceBox();
 }
 
-BuildingPlacer & BuildingPlacer::Instance()
-{
-    static BuildingPlacer instance;
-    return instance;
-}
-
 bool BuildingPlacer::isInResourceBox(int x, int y) const
 {
-    int posX(x * 32);
-    int posY(y * 32);
+    int posX = x * 32;
+    int posY = y * 32;
 
     return (posX >= _boxLeft) && (posX < _boxRight) && (posY >= _boxTop) && (posY < _boxBottom);
 }
@@ -32,14 +26,14 @@ bool BuildingPlacer::isInResourceBox(int x, int y) const
 void BuildingPlacer::computeResourceBox()
 {
     BWAPI::Position start(BWAPI::Broodwar->self()->getStartLocation());
-    BWAPI::Unitset unitsAroundNexus;
+    std::vector<BWAPI::Unit> unitsAroundNexus;
 
     for (auto & unit : BWAPI::Broodwar->getAllUnits())
     {
         // if the units are less than 400 away add them if they are resources
-        if (unit->getDistance(start) < 300 && unit->getType().isMineralField())
+        if (unit->getDistance(start) < 300 && unit->getType().isResourceContainer())
         {
-            unitsAroundNexus.insert(unit);
+            unitsAroundNexus.push_back(unit);
         }
     }
 
@@ -65,14 +59,10 @@ void BuildingPlacer::computeResourceBox()
 // makes final checks to see if a building can be built at a certain location
 bool BuildingPlacer::canBuildHere(BWAPI::TilePosition position,const Building & b) const
 {
-    /*if (!b.type.isRefinery() && !InformationManager::Instance().tileContainsUnit(position))
-    {
-    return false;
-    }*/
-
     //returns true if we can build this type of unit here. Takes into account reserved tiles.
     if (!BWAPI::Broodwar->canBuildHere(position,b.type,b.builderUnit))
     {
+        //BWAPI::Broodwar->drawCircleMap(BWAPI::Position(position), 8, BWAPI::Colors::Red, true);
         return false;
     }
 
@@ -83,6 +73,7 @@ bool BuildingPlacer::canBuildHere(BWAPI::TilePosition position,const Building & 
         {
             if (_reserveMap[x][y])
             {
+                //BWAPI::Broodwar->drawCircleMap(BWAPI::Position(position), 8, BWAPI::Colors::Blue, true);
                 return false;
             }
         }
@@ -91,9 +82,17 @@ bool BuildingPlacer::canBuildHere(BWAPI::TilePosition position,const Building & 
     // if it overlaps a base location return false
     if (tileOverlapsBaseLocation(position,b.type))
     {
+        //BWAPI::Broodwar->drawCircleMap(BWAPI::Position(position), 8, BWAPI::Colors::Yellow, true);
         return false;
     }
 
+    if (isInResourceBox(position.x,position.y))
+    {
+        //BWAPI::Broodwar->drawCircleMap(BWAPI::Position(position), 8, BWAPI::Colors::Orange, true);
+        return false;
+    }
+
+    //BWAPI::Broodwar->drawCircleMap(BWAPI::Position(position), 8, BWAPI::Colors::Green, true);
     return true;
 }
 
@@ -118,20 +117,19 @@ bool BuildingPlacer::tileBlocksAddon(BWAPI::TilePosition position) const
 }
 
 //returns true if we can build this type of unit here with the specified amount of space.
-//space value is stored in this->buildDistance.
 bool BuildingPlacer::canBuildHereWithSpace(BWAPI::TilePosition position,const Building & b,int buildDist,bool horizontalOnly) const
 {
     BWAPI::UnitType type = b.type;
 
     //if we can't build here, we of course can't build here with space
-    if (!canBuildHere(position,b))
+    if (!canBuildHere(position, b))
     {
         return false;
     }
 
     // height and width of the building
-    int width(b.type.tileWidth());
-    int height(b.type.tileHeight());
+    int width  = b.type.tileWidth();
+    int height = b.type.tileHeight();
 
     //make sure we leave space for add-ons. These types of units can have addons:
     if (b.type==BWAPI::UnitTypes::Terran_Command_Center ||
@@ -179,7 +177,7 @@ bool BuildingPlacer::canBuildHereWithSpace(BWAPI::TilePosition position,const Bu
         {
             if (!b.type.isRefinery())
             {
-                if (!buildable(b,x,y) || _reserveMap[x][y] || ((b.type != BWAPI::UnitTypes::Protoss_Photon_Cannon) && isInResourceBox(x,y)))
+                if (!buildable(b,x,y) || _reserveMap[x][y])
                 {
                     return false;
                 }
@@ -197,13 +195,8 @@ BWAPI::TilePosition BuildingPlacer::GetBuildLocation(const Building & b,int padd
 
 BWAPI::TilePosition BuildingPlacer::getBuildLocationNear(const Building & b,int buildDist,bool horizontalOnly) const
 {
-    // SparCraft::Timer t; TODO: May cause problems commenting ths out
-    // t.start();
-
     // get the precomputed vector of tile positions which are sorted closes to this location
-    const std::vector<BWAPI::TilePosition> & closestToBuilding = MapTools::Instance().getClosestTilesTo(BWAPI::Position(b.desiredPosition));
-
-    // double ms1 = t.getElapsedTimeInMilliSec();
+    const std::vector<BWAPI::TilePosition> & closestToBuilding = Global::Map().getClosestTilesTo(BWAPI::Position(b.desiredPosition));
 
     // special easy case of having no pylons
     int numPylons = BWAPI::Broodwar->self()->completedUnitCount(BWAPI::UnitTypes::Protoss_Pylon);
@@ -217,14 +210,12 @@ BWAPI::TilePosition BuildingPlacer::getBuildLocationNear(const Building & b,int 
     {
         if (canBuildHereWithSpace(closestToBuilding[i],b,buildDist,horizontalOnly))
         {
-            // double ms = t.getElapsedTimeInMilliSec();
             //BWAPI::Broodwar->printf("Building Placer Took %d iterations, lasting %lf ms @ %lf iterations/ms, %lf setup ms", i, ms, (i / ms), ms1);
 
             return closestToBuilding[i];
         }
     }
 
-    //double ms = t.getElapsedTimeInMilliSec();
     //BWAPI::Broodwar->printf("Building Placer Took %lf ms", ms);
 
     return  BWAPI::TilePositions::None;
@@ -245,13 +236,13 @@ bool BuildingPlacer::tileOverlapsBaseLocation(BWAPI::TilePosition tile,BWAPI::Un
     int ty2 = ty1 + type.tileHeight();
 
     // for each base location
-    for (BWTA::BaseLocation * base : BWTA::getBaseLocations())
+    for (const BaseLocation * base : Global::Bases().getBaseLocations())
     {
         // dimensions of the base location
-        int bx1 = base->getTilePosition().x;
-        int by1 = base->getTilePosition().y;
-        int bx2 = bx1 + BWAPI::Broodwar->self()->getRace().getCenter().tileWidth();
-        int by2 = by1 + BWAPI::Broodwar->self()->getRace().getCenter().tileHeight();
+        int bx1 = base->getDepotTilePosition().x;
+        int by1 = base->getDepotTilePosition().y;
+        int bx2 = bx1 + BWAPI::Broodwar->self()->getRace().getResourceDepot().tileWidth();
+        int by2 = by1 + BWAPI::Broodwar->self()->getRace().getResourceDepot().tileHeight();
 
         // conditions for non-overlap are easy
         bool noOverlap = (tx2 < bx1) || (tx1 > bx2) || (ty2 < by1) || (ty1 > by2);
@@ -272,25 +263,12 @@ bool BuildingPlacer::buildable(const Building & b,int x,int y) const
     BWAPI::TilePosition tp(x,y);
 
     //returns true if this tile is currently buildable, takes into account units on tile
-    if (!BWAPI::Broodwar->isBuildable(x,y))
+    if (!tp.isValid() || !BWAPI::Broodwar->isBuildable(x,y, true))
     {
         return false;
     }
 
     if ((BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Terran) && tileBlocksAddon(BWAPI::TilePosition(x,y)))
-    {
-        return false;
-    }
-
-    for (auto & unit : BWAPI::Broodwar->getUnitsOnTile(x,y))
-    {
-        if ((b.builderUnit != nullptr) && (unit != b.builderUnit))
-        {
-            return false;
-        }
-    }
-
-    if (!tp.isValid())
     {
         return false;
     }

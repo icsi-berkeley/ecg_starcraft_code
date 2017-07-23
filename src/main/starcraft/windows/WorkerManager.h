@@ -10,9 +10,8 @@ class Building;
 
 class WorkerManager
 {
+    WorkerData  workerData;
     BWAPI::Unit previousClosestWorker;
-
-    bool        isGasStealRefinery(BWAPI::Unit unit);
 
     void        handleIdleWorkers();
     void        handleGasWorkers();
@@ -20,18 +19,14 @@ class WorkerManager
     void        handleCombatWorkers();
     void        handleRepairWorkers();
 
-    WorkerManager();
-
 public:
-    WorkerData  workerData;
 
-    void        setMineralWorker(BWAPI::Unit unit);
+    WorkerManager();
 
     void        update();
     void        onUnitDestroy(BWAPI::Unit unit);
     void        onUnitMorph(BWAPI::Unit unit);
     void        onUnitShow(BWAPI::Unit unit);
-    void        onUnitRenegade(BWAPI::Unit unit);
     void        finishedWithWorker(BWAPI::Unit unit);
 
     void        finishedWithCombatWorkers();
@@ -45,9 +40,9 @@ public:
     int         getNumIdleWorkers();
     void        setScoutWorker(BWAPI::Unit worker);
 
-    bool        isWorkerScout(BWAPI::Unit worker);
-    bool        isFree(BWAPI::Unit worker);
-    bool        isBuilder(BWAPI::Unit worker);
+    bool        isWorkerScout(BWAPI::Unit worker) const;
+    bool        isFree(BWAPI::Unit worker) const;
+    bool        isBuilder(BWAPI::Unit worker) const;
 
     BWAPI::Unit getBuilder(Building & b,bool setJobAsBuilder = true);
     BWAPI::Unit getMoveWorker(BWAPI::Position p);
@@ -55,7 +50,6 @@ public:
     BWAPI::Unit getGasWorker(BWAPI::Unit refinery);
     BWAPI::Unit getClosestEnemyUnit(BWAPI::Unit worker);
     BWAPI::Unit getClosestMineralWorkerTo(BWAPI::Unit enemyUnit);
-    BWAPI::Unit getWorkerScout();
 
     void        setBuildingWorker(BWAPI::Unit worker,Building & b);
     void        setRepairWorker(BWAPI::Unit worker,BWAPI::Unit unitToRepair);
@@ -66,6 +60,9 @@ public:
     bool        willHaveResources(int mineralsRequired,int gasRequired,double distance);
     void        rebalanceWorkers();
 
-    static WorkerManager &  Instance();
+    void        setMineralWorker(BWAPI::Unit unit); // Custom: made public
+    void        setWorkerJob(BWAPI::Unit unit, WorkerData::WorkerJob job, BWAPI::Unit jobUnit); // Custom: added
+
 };
+
 }

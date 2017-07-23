@@ -4,7 +4,7 @@
 #include "BuildOrderQueue.h"
 #include "BuildingManager.h"
 #include "StrategyManager.h"
-// #include "BOSSManager.h" TODO: Might cause problems commenting this out
+// #include "BOSSManager.h"
 #include "BuildOrder.h"
 
 namespace UAlbertaBot
@@ -13,20 +13,16 @@ typedef unsigned char Action;
 
 class ProductionManager
 {
-    ProductionManager();
-
+    BuildingManager     _buildingManager;
     BuildOrderQueue     _queue;
     BWAPI::TilePosition _predictedTilePosition;
     bool                _enemyCloakedDetected;
     bool                _assignedWorkerForThisBuilding;
     bool                _haveLocationForThisBuilding;
 
-    BWAPI::Unit         getClosestUnitToPosition(const BWAPI::Unitset & units,BWAPI::Position closestTo);
+    BWAPI::Unit         getClosestUnitToPosition(const std::vector<BWAPI::Unit> & units,BWAPI::Position closestTo);
     BWAPI::Unit         selectUnitOfType(BWAPI::UnitType type,BWAPI::Position closestTo = BWAPI::Position(0,0));
 
-    bool                hasResources(BWAPI::UnitType type);
-    bool                canMake(BWAPI::UnitType type);
-    bool                hasNumCompletedUnitType(BWAPI::UnitType type,int num);
     bool                meetsReservedResources(MetaType type);
     void                setBuildOrder(const BuildOrder & buildOrder);
     void                create(BWAPI::Unit producer,BuildOrderItem & item);
@@ -43,22 +39,18 @@ class ProductionManager
 
 public:
 
-    static ProductionManager &	Instance();
+    ProductionManager();
 
-    void        drawQueueInformation(std::map<BWAPI::UnitType,int> & numUnits,int x,int y,int index);
+    void        onStart();
     void        update();
-    void        onUnitMorph(BWAPI::Unit unit);
     void        onUnitDestroy(BWAPI::Unit unit);
     void        performBuildOrderSearch();
     void        drawProductionInformation(int x,int y);
-    void        setSearchGoal(MetaPairVector & goal);
-    void        queueGasSteal();
 
     BWAPI::Unit getProducer(MetaType t,BWAPI::Position closestTo = BWAPI::Positions::None);
 
-    // Custom added method
-    void        queueHighPriorityUnit(BWAPI::UnitType unitType);
-    void        queueLowPriorityUnit(BWAPI::UnitType unitType);
+    void        queueHighPriorityUnit(BWAPI::UnitType unit); // Custom: added
+	void        queueLowPriorityUnit(BWAPI::UnitType unit); // Custom: added
 };
 
 

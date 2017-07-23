@@ -66,13 +66,6 @@ bool BuildOrderQueue::canSkipItem()
 
 void BuildOrderQueue::queueItem(BuildOrderItem b)
 {
-	if (b.metaType.getUnitType() == BWAPI::UnitTypes::Terran_SCV)
-	{
-		FILE * error_file;
-		error_file = fopen("C:/Users/Vivek Raghuram/Desktop/stderr.txt", "a");
-		fprintf(error_file, "Queuing an SCV!.\n");
-		fclose(error_file);
-	}
 	// if the queue is empty, set the highest and lowest priorities
 	if (queue.empty())
 	{
@@ -102,13 +95,13 @@ void BuildOrderQueue::queueItem(BuildOrderItem b)
 	lowestPriority  = (b.priority < lowestPriority)  ? b.priority : lowestPriority;
 }
 
-void BuildOrderQueue::queueAsHighestPriority(MetaType m, bool blocking, bool gasSteal)
+void BuildOrderQueue::queueAsHighestPriority(MetaType m, bool blocking)
 {
 	// the new priority will be higher
 	int newPriority = highestPriority + defaultPrioritySpacing;
 
 	// queue the item
-	queueItem(BuildOrderItem(m, newPriority, blocking, gasSteal));
+	queueItem(BuildOrderItem(m, newPriority, blocking));
 }
 
 void BuildOrderQueue::queueAsLowestPriority(MetaType m, bool blocking)

@@ -6,18 +6,14 @@
 #include <ws2tcpip.h>
 #include <stdio.h>
 
-#include "BWTA.h"
 #include "ECGUtil.h"
 #include "MessageManager.h"
 #include "Message.h"
 #include "ECGStarcraftManager.h"
-#include "InformationManager.h"
-#include "MapGrid.h"
-#include "WorkerManager.h"
-#include "ProductionManager.h"
-#include "BuildingManager.h"
 #include "NameManager.h"
 #include "EventManager.h"
+
+#include "Global.h"
 
 using namespace ECGBot;
 
@@ -40,9 +36,12 @@ void ECGStarcraftAdapter::onStart()
   // and reduce the bot's APM (Actions Per Minute).
   BWAPI::Broodwar->setCommandOptimizationLevel(2);
 
-  // Get BWTA ready for the InformationManager
-  BWTA::readMap();
-  BWTA::analyze();
+  UAlbertaBot::Global::SetModule(this);
+
+  _unitInfoManager.onStart();
+  _mapTools.onStart();
+  _baseLocationManager.onStart();
+  _productionManager.onStart();
 
 }
 
@@ -58,7 +57,7 @@ void ECGStarcraftAdapter::onFrame()
   BWAPI::Broodwar->drawTextScreen(10, 30, "APM: %d", BWAPI::Broodwar->getAPM() );
 
   NameManager::Instance().draw();
-  UAlbertaBot::ProductionManager::Instance().drawProductionInformation(200, 10);
+  _productionManager.drawProductionInformation(200, 10); // TODO:albertanewversionfix
 
   // Return if the game is a replay or is paused
   if ( BWAPI::Broodwar->isReplay() || BWAPI::Broodwar->isPaused() || !BWAPI::Broodwar->self() )
@@ -85,11 +84,12 @@ void ECGStarcraftAdapter::onFrame()
 
   }
 
-  UAlbertaBot::InformationManager::Instance().update();
-  UAlbertaBot::MapGrid::Instance().update();
-  UAlbertaBot::WorkerManager::Instance().update();
-  UAlbertaBot::ProductionManager::Instance().update();
-  UAlbertaBot::BuildingManager::Instance().update();
+  _mapTools.update();
+  _strategyManager.update();
+  _unitInfoManager.update();
+  _workerManager.update();
+  _baseLocationManager.update();
+	_productionManager.update();
 
   EventManager::Instance().update();
 
@@ -120,28 +120,28 @@ void ECGStarcraftAdapter::onUnitEvade(BWAPI::Unit unit) {}
 
 void ECGStarcraftAdapter::onUnitShow(BWAPI::Unit unit)
 {
-  UAlbertaBot::InformationManager::Instance().onUnitShow(unit);
-  UAlbertaBot::WorkerManager::Instance().onUnitShow(unit);
+  //UAlbertaBot::InformationManager::Instance().onUnitShow(unit); // TODO:albertanewversionfix
+  //UAlbertaBot::WorkerManager::Instance().onUnitShow(unit); // TODO:albertanewversionfix
   NameManager::Instance().onUnitShow(unit);
 }
 
 void ECGStarcraftAdapter::onUnitHide(BWAPI::Unit unit)
 {
-  UAlbertaBot::InformationManager::Instance().onUnitHide(unit);
+  //UAlbertaBot::InformationManager::Instance().onUnitHide(unit); // TODO:albertanewversionfix
 }
 
 void ECGStarcraftAdapter::onUnitCreate(BWAPI::Unit unit)
 {
   NameManager::Instance().onUnitCreate(unit);
-  UAlbertaBot::InformationManager::Instance().onUnitCreate(unit);
+  //UAlbertaBot::InformationManager::Instance().onUnitCreate(unit); // TODO:albertanewversionfix
 }
 
 void ECGStarcraftAdapter::onUnitDestroy(BWAPI::Unit unit)
 {
   // TODO: Remove the unit label
-  UAlbertaBot::ProductionManager::Instance().onUnitDestroy(unit);
-  UAlbertaBot::WorkerManager::Instance().onUnitDestroy(unit);
-  UAlbertaBot::InformationManager::Instance().onUnitDestroy(unit);
+  //UAlbertaBot::ProductionManager::Instance().onUnitDestroy(unit); // TODO:albertanewversionfix
+  //UAlbertaBot::WorkerManager::Instance().onUnitDestroy(unit); // TODO:albertanewversionfix
+  //UAlbertaBot::InformationManager::Instance().onUnitDestroy(unit); // TODO:albertanewversionfix
 }
 
 void ECGStarcraftAdapter::onUnitMorph(BWAPI::Unit unit) {}
@@ -152,5 +152,35 @@ void ECGStarcraftAdapter::onSaveGame(std::string gameName) {}
 
 void ECGStarcraftAdapter::onUnitComplete(BWAPI::Unit unit)
 {
-  UAlbertaBot::InformationManager::Instance().onUnitComplete(unit);
+  //UAlbertaBot::InformationManager::Instance().onUnitComplete(unit); // TODO:albertanewversionfix
+}
+
+UAlbertaBot::WorkerManager & ECGStarcraftAdapter::Workers()
+{
+    return _workerManager;
+}
+
+UAlbertaBot::ProductionManager & ECGStarcraftAdapter::Production()
+{
+    return _productionManager;
+}
+
+const UAlbertaBot::UnitInfoManager & ECGStarcraftAdapter::UnitInfo() const
+{
+    return _unitInfoManager;
+}
+
+const UAlbertaBot::StrategyManager & ECGStarcraftAdapter::Strategy() const
+{
+    return _strategyManager;
+}
+
+const UAlbertaBot::BaseLocationManager & ECGStarcraftAdapter::Bases() const
+{
+    return _baseLocationManager;
+}
+
+const UAlbertaBot::MapTools & ECGStarcraftAdapter::Map() const
+{
+    return _mapTools;
 }

@@ -1,6 +1,8 @@
 #include "Common.h"
 #include "StrategyManager.h"
 #include "UnitUtil.h"
+#include "Global.h"
+#include "ParseUtils.h"
 
 using namespace UAlbertaBot;
 
@@ -10,14 +12,13 @@ StrategyManager::StrategyManager()
 	, _enemyRace(BWAPI::Broodwar->enemy()->getRace())
     , _emptyBuildOrder(BWAPI::Broodwar->self()->getRace())
 {
-
+    // parse the configuration file for the bot's strategies
+	ParseUtils::ParseStrategy(Config::ConfigFile::ConfigFileLocation, *this);
 }
 
-// get an instance of this
-StrategyManager & StrategyManager::Instance()
+void StrategyManager::update()
 {
-	static StrategyManager instance;
-	return instance;
+
 }
 
 const int StrategyManager::getScore(BWAPI::Player player) const
@@ -44,7 +45,7 @@ const BuildOrder & StrategyManager::getOpeningBookBuildOrder() const
 const bool StrategyManager::shouldExpandNow() const
 {
 	// if there is no place to expand to, we can't expand
-	if (MapTools::Instance().getNextExpansion() == BWAPI::TilePositions::None)
+	if (Global::Bases().getNextExpansion(BWAPI::Broodwar->self()) == BWAPI::TilePositions::None)
 	{
         BWAPI::Broodwar->printf("No valid expansion location");
 		return false;
@@ -57,12 +58,6 @@ const bool StrategyManager::shouldExpandNow() const
                         + UnitUtil::GetAllUnitCount(BWAPI::UnitTypes::Zerg_Hive);
 	int frame           = BWAPI::Broodwar->getFrameCount();
     int minute          = frame / (24*60);
-
-	// if we have a ton of idle workers then we need a new expansion
-	if (WorkerManager::Instance().getNumIdleWorkers() > 10)
-	{
-		return true;
-	}
 
     // if we have a ridiculous stockpile of minerals, expand
     if (BWAPI::Broodwar->self()->minerals() > 3000)
@@ -89,7 +84,7 @@ void StrategyManager::addStrategy(const std::string & name, Strategy & strategy)
     _strategies[name] = strategy;
 }
 
-const MetaPairVector StrategyManager::getBuildOrderGoal()
+const MetaPairVector StrategyManager::getBuildOrderGoal() const
 {
     BWAPI::Race myRace = BWAPI::Broodwar->self()->getRace();
 
@@ -174,18 +169,9 @@ const MetaPairVector StrategyManager::getProtossBuildOrderGoal() const
     }
 
     // add observer to the goal if the enemy has cloaked units
-	if (InformationManager::Instance().enemyHasCloakedUnits())
+	if (Global::UnitInfo().enemyHasCloakedUnits())
 	{
-		goal.push_back(MetaPair(BWAPI::UnitTypes::Protoss_Robotics_Facility, 1));
-
-		if (BWAPI::Broodwar->self()->completedUnitCount(BWAPI::UnitTypes::Protoss_Robotics_Facility) > 0)
-		{
-			goal.push_back(MetaPair(BWAPI::UnitTypes::Protoss_Observatory, 1));
-		}
-		if (BWAPI::Broodwar->self()->completedUnitCount(BWAPI::UnitTypes::Protoss_Observatory) > 0)
-		{
-			goal.push_back(MetaPair(BWAPI::UnitTypes::Protoss_Observer, 1));
-		}
+		goal.push_back(MetaPair(BWAPI::UnitTypes::Protoss_Observer, 1));
 	}
 
     // if we want to expand, insert a nexus into the build order
@@ -254,6 +240,11 @@ const MetaPairVector StrategyManager::getTerranBuildOrderGoal() const
         goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Terran_Command_Center, numCC + 1));
         goal.push_back(std::pair<MetaType, int>(BWAPI::UnitTypes::Terran_SCV, numWorkers + 10));
     }
+
+    if (Global::UnitInfo().enemyHasCloakedUnits())
+	{
+		goal.push_back(MetaPair(BWAPI::UnitTypes::Terran_Science_Vessel, 1));
+	}
 
 	return goal;
 }

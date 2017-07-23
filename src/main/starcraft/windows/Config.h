@@ -2,6 +2,7 @@
 
 #include "BWAPI.h"
 #include <cassert>
+#include <set>
 
 namespace Config
 {
@@ -14,10 +15,6 @@ namespace Config
 
     namespace Modules
     {
-        extern bool UsingGameCommander;
-        extern bool UsingScoutManager;
-        extern bool UsingCombatCommander;
-        extern bool UsingUnitCommandManager;
         extern bool UsingBuildOrderSearch;
         extern bool UsingAutoObserver;
         extern bool UsingStrategyIO;
@@ -28,6 +25,24 @@ namespace Config
         extern std::string BotName;
         extern std::string Authors;
         extern bool PrintInfoOnStart;
+        extern std::string BotMode;
+    }
+
+    namespace Arena
+    {
+        extern int ArenaOutputResults;
+        extern int ArenaBattles;
+    }
+
+    namespace SparCraft
+    {
+        extern std::string SparCraftConfigFile;
+        extern std::string CombatSimPlayerName;
+    }
+
+    namespace Arena
+    {
+        extern std::string SparCraftPlayerName;
     }
 
     namespace Strategy
@@ -35,7 +50,6 @@ namespace Config
         extern std::string StrategyName;
         extern std::string ReadDir;
         extern std::string WriteDir;
-        extern bool GasStealWithScout;
         extern bool ScoutHarassEnemy;
         extern bool UseEnemySpecificStrategy;
         extern bool FoundEnemySpecificStrategy;
@@ -70,7 +84,7 @@ namespace Config
         extern bool DrawMouseCursorInfo;
         extern bool DrawEnemyUnitInfo;
         extern bool DrawBWTAInfo;
-        extern bool DrawMapGrid;
+        extern bool DrawLastSeenTileInfo;
         extern bool DrawUnitTargetInfo;
         extern bool DrawSquadInfo;
         extern bool DrawBOSSStateInfo;
