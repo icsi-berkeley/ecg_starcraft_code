@@ -91,7 +91,10 @@ public:
   static BWAPI::Unitset ECGUtil::resolveUnitDescriptor(UnitDescriptor ud, const BWAPI::UnitFilter extraFilter = BWAPI::Filter::IsCompleted)
 	{
 		if (ud.empty)
-			return ud.defaultUnits;
+    {
+      BWAPI::Broodwar->sendText("ud is empty");
+      return ud.defaultUnits;
+    }
 
     BWAPI::Unitset matchedSet;
     // Use Identifiers

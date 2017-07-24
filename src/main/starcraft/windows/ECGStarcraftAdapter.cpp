@@ -91,7 +91,18 @@ void ECGStarcraftAdapter::onFrame()
   _baseLocationManager.update();
 	_productionManager.update();
 
-  EventManager::Instance().update();
+  if ( BWAPI::Broodwar->getFrameCount() % (BWAPI::Broodwar->getLatencyFrames() * 8) == 0 )
+    EventManager::Instance().update();
+
+  // One of my ugliest hacks ever in order to getBuildUnit which for some reason is not available onUnitCreate
+  for (auto unit : BWAPI::Broodwar->self()->getUnits())
+  {
+    if (unit->isTraining() || unit->isConstructing())
+    {
+      if (unit->getBuildUnit())
+        NameManager::Instance().onUnitReadyFrame(unit->getID(), unit->getBuildUnit()->getID());
+    }
+  }
 
 }
 
@@ -161,6 +172,7 @@ void ECGStarcraftAdapter::onSaveGame(std::string gameName) {}
 void ECGStarcraftAdapter::onUnitComplete(BWAPI::Unit unit)
 {
   _unitInfoManager.onUnitComplete(unit);
+  EventManager::Instance().onUnitComplete(unit);
 }
 
 UAlbertaBot::WorkerManager & ECGStarcraftAdapter::Workers()

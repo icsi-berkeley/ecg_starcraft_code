@@ -44,6 +44,26 @@ int NameManager::getUnitID(std::string unitName)
   return nameToID[unitName];
 }
 
+int NameManager::getECGID(int unitID)
+{
+  return uidToEid[unitID];
+}
+
+void NameManager::onUnitReadyFrame(int producerID, int unitID)
+{
+  int ecgID = producerToEid[producerID];
+  if (ecgID > 0 && uidToEid.count(unitID) == 0)
+  {
+    uidToEid[unitID] = ecgID;
+    eidToUid[ecgID].insert(unitID);
+  }
+}
+
+void NameManager::onUnitProduction(int ecgID, int producerID)
+{
+  producerToEid[producerID] = ecgID;
+}
+
 void NameManager::onUnitCreate(BWAPI::Unit unit)
 {
   if (unit->getPlayer() == BWAPI::Broodwar->self())

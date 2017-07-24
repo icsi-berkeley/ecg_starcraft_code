@@ -255,7 +255,7 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
                         "quantity": 0,
                         "comparator": "GEQ",
                         "name": None,
-                        "unit_type": None, #NOTE: This used to be "scv" which was too specific
+                        "unit_type": None,
                         "ecg_id": None,
                         "location": None,
                         "status": "NA",
@@ -324,43 +324,6 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
                     "quantity": 1,
                     "unit_type": "barracks",
                     "ecg_id": 123456789
-                }
-            elif choice == "26":
-                # “If an SCV is idle, make it mine minerals!”
-                message = {
-                    "type": "conditional",
-                    "trigger": "ALWAYS",
-                    "event": {
-                        "type": "army",
-                        "parents": ["event"],
-                        "unit_descriptor": {
-                            "type": "unit_descriptor",
-                            "quantity": 1,
-                            "comparator": "GEQ",
-                            "name": None,
-                            "unit_type": "scv",
-                            "ecg_id": None,
-                            "location": None,
-                            "status": "IDLE",
-                            "ally": True
-                        }
-                    },
-                    "response": {
-                        "type": "gather",
-                        "parents": ["action"],
-                        "resource_type": "MINERALS",
-                        "commanded_unit": {
-                            "type": "unit_descriptor",
-                            "quantity": 1,
-                            "comparator": "GEQ",
-                            "name": None,
-                            "unit_type": "scv",
-                            "ecg_id": None,
-                            "location": None,
-                            "status": "IDLE",
-                            "ally": True
-                        }
-                    }
                 }
             elif choice == "11":
                 # "Delta, move over here!"
@@ -476,6 +439,43 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
                         "ally": True
                     }
                 }
+            elif choice == "26":
+                # “If an SCV is idle, make it mine minerals!”
+                message = {
+                    "type": "conditional",
+                    "trigger": "ALWAYS",
+                    "event": {
+                        "type": "army",
+                        "parents": ["event"],
+                        "unit_descriptor": {
+                            "type": "unit_descriptor",
+                            "quantity": 1,
+                            "comparator": "GEQ",
+                            "name": None,
+                            "unit_type": "scv",
+                            "ecg_id": None,
+                            "location": None,
+                            "status": "IDLE",
+                            "ally": True
+                        }
+                    },
+                    "response": {
+                        "type": "gather",
+                        "parents": ["action"],
+                        "resource_type": "MINERALS",
+                        "commanded_unit": {
+                            "type": "unit_descriptor",
+                            "quantity": 1,
+                            "comparator": "GEQ",
+                            "name": None,
+                            "unit_type": "scv",
+                            "ecg_id": None,
+                            "location": None,
+                            "status": "IDLE",
+                            "ally": True
+                        }
+                    }
+                }
             elif choice == "27":
                 # “Build SCVs until I have 8 of them!”
                 message = {
@@ -501,7 +501,7 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
                         "parents": ["action"],
                         "quantity": 1,
                         "unit_type": "scv",
-                        "ecg_id": 0
+                        "ecg_id": 123456789
                     }
                 }
             else:

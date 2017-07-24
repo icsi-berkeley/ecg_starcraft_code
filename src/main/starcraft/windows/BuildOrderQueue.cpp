@@ -95,22 +95,22 @@ void BuildOrderQueue::queueItem(BuildOrderItem b)
 	lowestPriority  = (b.priority < lowestPriority)  ? b.priority : lowestPriority;
 }
 
-void BuildOrderQueue::queueAsHighestPriority(MetaType m, bool blocking)
+void BuildOrderQueue::queueAsHighestPriority(MetaType m, bool blocking, int ecgID)
 {
 	// the new priority will be higher
 	int newPriority = highestPriority + defaultPrioritySpacing;
 
 	// queue the item
-	queueItem(BuildOrderItem(m, newPriority, blocking));
+	queueItem(BuildOrderItem(m, newPriority, blocking, ecgID));
 }
 
-void BuildOrderQueue::queueAsLowestPriority(MetaType m, bool blocking)
+void BuildOrderQueue::queueAsLowestPriority(MetaType m, bool blocking, int ecgID)
 {
 	// the new priority will be higher
 	int newPriority = lowestPriority - defaultPrioritySpacing;
 
 	// queue the item
-	queueItem(BuildOrderItem(m, newPriority, blocking));
+	queueItem(BuildOrderItem(m, newPriority, blocking, ecgID));
 }
 
 void BuildOrderQueue::removeHighestPriorityItem()

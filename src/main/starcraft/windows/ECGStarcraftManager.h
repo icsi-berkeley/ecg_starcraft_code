@@ -15,11 +15,12 @@ public:
     // singletons
     static ECGStarcraftManager & Instance();
 
-    void    evaluateAction(Message* message);
+    // TODO: there is no reason not to make all these functions static
+    void    evaluateAction(Message* message, bool* blocking = nullptr);
 
-    void    build(Message* message);
-    void    gather(Message* message);
-    void    move(Message* message);
+    void    build(Message* message, bool* blocking);
+    void    gather(Message* message, bool* blocking);
+    void    move(Message* message, bool* blocking);
 
 };
 }

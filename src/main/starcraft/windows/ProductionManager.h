@@ -49,8 +49,8 @@ public:
 
     BWAPI::Unit getProducer(MetaType t,BWAPI::Position closestTo = BWAPI::Positions::None);
 
-    void        queueHighPriorityUnit(BWAPI::UnitType unit); // Custom: added
-	void        queueLowPriorityUnit(BWAPI::UnitType unit); // Custom: added
+    void        queueHighPriorityUnit(BWAPI::UnitType unit, int ecgID = 0); // Custom: added
+	  void        queueLowPriorityUnit(BWAPI::UnitType unit, int ecgID = 0); // Custom: added
 };
 
 

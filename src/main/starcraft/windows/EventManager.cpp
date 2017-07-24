@@ -4,18 +4,6 @@
 
 using namespace ECGBot;
 
-ArmyEvent::ArmyEvent(UnitDescriptor ud, Message* ac, EventKind ek) {
-  units = ud; nextAction = ac; kind = ek;
-}
-
-ResourceEvent::ResourceEvent(Resource r, int t, Comparator c, Message* ac, EventKind ek) {
-  resource = r; threshold = t; comparator = c; nextAction = ac; kind = ek;
-}
-
-LocationEvent::LocationEvent(UnitDescriptor ud, BWAPI::Position pos, Region reg, Message* ac, EventKind ek) {
-  units = ud; position = pos; region = reg; nextAction = ac; kind = ek;
-}
-
 EventManager::EventManager()
 {
   return;
@@ -39,10 +27,6 @@ void EventManager::registerEvent(Message* message)
     return registerArmyEvent(event, response, kind);
   else if (strcmp(type, "resource") == 0)
     return registerResourceEvent(event, response, kind);
-  else if (strcmp(type, "location") == 0)
-    return registerLocationEvent(event, response, kind);
-  else if (strcmp(type, "construction") == 0)
-    return; //registerConstructionEvent(event, response, kind);
 
   delete event;
   delete response;
@@ -52,7 +36,7 @@ void EventManager::registerArmyEvent(Message* event, Message* response, EventKin
 {
   BWAPI::Broodwar->sendText("Registering army event");
   ArmyEvent* newEvent = new ArmyEvent(event->readUnitDescriptor(), response, kind);
-  armyEventList.push_back(newEvent);
+  eventList.push_back(newEvent);
   delete event;
 }
 
@@ -60,16 +44,15 @@ void EventManager::registerResourceEvent(Message* event, Message* response, Even
 {
   BWAPI::Broodwar->sendText("Registering resource event");
   ResourceEvent* newEvent = new ResourceEvent(event->readResourceType(), event->readThreshold(), event->readComparator(), response, kind);
-  resourceEventList.push_back(newEvent);
+  eventList.push_back(newEvent);
   delete event;
 }
 
-void EventManager::registerLocationEvent(Message* event, Message* response, EventKind kind)
+void EventManager::registerCreateEvent(int ecgID, int quantity, bool* response, EventKind kind)
 {
-  BWAPI::Broodwar->sendText("Registering location event");
-  LocationEvent* newEvent = new LocationEvent(event->readUnitDescriptor(), event->readLandmark(), event->readRegion(), response, kind);
-  locationEventList.push_back(newEvent);
-  delete event;
+  BWAPI::Broodwar->sendText("Registering create event");
+  CreateEvent* newEvent = new CreateEvent(ecgID, quantity, response, kind);
+  eventList.push_back(newEvent);
 }
 
 bool EventManager::checkArmyEvent(ArmyEvent* event)
@@ -106,74 +89,79 @@ bool EventManager::checkResourceEvent(ResourceEvent* event)
   return false;
 }
 
-bool EventManager::checkLocationEvent(LocationEvent* event)
+bool EventManager::checkCreateEvent(CreateEvent* event)
 {
-  BWAPI::Unitset matchedSet = ECGUtil::resolveUnitDescriptor(event->units);
-
-  // TODO: play around with reasonable radii
-  switch (event->region) {
-    case Region::EXACT:
-      if (matchedSet.getPosition().getDistance(event->position) < 50.0) // is this reasonable? who knows????
-        return true;
-      break;
-    case Region::CLOSE:
-      if (matchedSet.getPosition().getDistance(event->position) < 100.0) // is this reasonable? who knows????
-        return true;
-      break;
-    case Region::DISTANT:
-      if (matchedSet.getPosition().getDistance(event->position) > 100.0) // is this reasonable? who knows????
-        return true;
-      break;
-    case Region::RIGHT:
-      if (matchedSet.getPosition().getDistance(event->position + BWAPI::Position(75, 0)) < 100.0) // is this reasonable? who knows????
-        return true;
-      break;
-    case Region::LEFT:
-      if (matchedSet.getPosition().getDistance(event->position - BWAPI::Position(75, 0)) < 100.0) // is this reasonable? who knows????
-        return true;
-      break;
-    case Region::BACK:
-      if (matchedSet.getPosition().getDistance(event->position + BWAPI::Position(0, 75)) < 100.0) // is this reasonable? who knows????
-        return true;
-      break;
-    case Region::FRONT:
-      if (matchedSet.getPosition().getDistance(event->position - BWAPI::Position(75, 0)) < 100.0) // is this reasonable? who knows????
-        return true;
-      break;
-  }
-  return false;
+  return event->remainingCount <= 0;
 }
 
 
 void EventManager::update()
 {
-  for (auto iter = armyEventList.begin(); iter != armyEventList.end();)
+  for (auto eventIter = eventList.begin(); eventIter != eventList.end();)
   {
-    if (checkArmyEvent(*iter))
+    Event* event = *eventIter;
+    if (event->block)
     {
-
-      ECGStarcraftManager::Instance().evaluateAction((*iter)->nextAction);
-      if ((*iter)->kind == EventKind::ONCE || (*iter)->kind == EventKind::UNTIL)
-      {
-        delete (*iter)->nextAction;
-        delete *iter;
-        armyEventList.erase(iter++);
-      }
-      else
-        iter++;
+      eventIter++;
+    }
+    else if (event->completed)
+    {
+      delete event->response;
+      delete event;
+      eventList.erase(eventIter++);
     }
     else
     {
-      if ((*iter)->kind == EventKind::WHILE)
+      eventIter++;
+      bool result = false;
+      switch (event->type)
       {
-        delete (*iter)->nextAction;
-        delete *iter;
-        armyEventList.erase(iter++);
+        case EventType::ARMY:
+          result = checkArmyEvent((ArmyEvent*) event);
+          break;
+        case EventType::RESOURCE:
+          result = checkResourceEvent((ResourceEvent*) event);
+          break;
+        case EventType::CREATE:
+          result = checkCreateEvent((CreateEvent*) event);
+          break;
       }
-      else
-        iter++;
+
+      if (result && event->kind == EventKind::UNTIL)
+      {
+        event->completed = true;
+      }
+      else if (result || event->kind == EventKind::UNTIL)
+      {
+        if (event->kind == EventKind::ONCE)
+          event->completed = true;
+
+        if (event->boolResponse == nullptr)
+        {
+          event->block = true;
+          ECGStarcraftManager::Instance().evaluateAction(event->response, &(event->block));
+        }
+        else
+        {
+          *(event->boolResponse) = false;
+          event->block = false;
+        }
+      }
+      else if (event->kind == EventKind::WHILE)
+      {
+        event->completed = true;
+      }
     }
   }
+}
 
-  // TODO: Add the other events
+void EventManager::onUnitComplete(BWAPI::Unit unit)
+{
+  BWAPI::Broodwar->sendText("on unit complete");
+  int eid = NameManager::Instance().getECGID(unit->getID());
+  BWAPI::Broodwar->sendText(std::to_string(eid).c_str());
+  for (auto& event : eventList)
+    if (event->type == EventType::CREATE)
+      if (((CreateEvent*) event)->ecgID == eid)
+        ((CreateEvent*) event)->remainingCount--;
 }

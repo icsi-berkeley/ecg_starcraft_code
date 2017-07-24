@@ -6,61 +6,87 @@
 namespace ECGBot
 {
 
-struct ArmyEvent {
-  UnitDescriptor units;
-  Message* nextAction;
-  EventKind kind;
+enum EventType {ARMY, RESOURCE, CREATE};
 
-  ArmyEvent(UnitDescriptor ud, Message* ac, EventKind ek);
+struct Event {
+  bool* boolResponse;
+  Message* response;
+  EventKind kind; // EventKind gives the trigger conditions whereas EventType gives the specific class of event
+  EventType type; // Talk about confusing naming
+  bool block;
+  bool completed;
+
+  Event(Message* r, bool* b, EventKind k)
+  {
+    assert(b != nullptr || r != nullptr); // At least one is not a nullptr
+    assert(b == nullptr || r == nullptr); // At least one is a nullptr
+    kind = k; boolResponse = b; response = r; block = false; completed = false;
+  }
 };
 
-struct ResourceEvent {
+struct ArmyEvent : Event {
+  UnitDescriptor units;
+
+  ArmyEvent(UnitDescriptor ud, Message* r, EventKind k) : Event(r, nullptr, k)
+  {
+    units = ud; type = EventType::ARMY;
+  }
+
+  ArmyEvent(UnitDescriptor ud, bool* b, EventKind k) : Event(nullptr, b, k)
+  {
+    units = ud; type = EventType::ARMY;
+  }
+};
+
+struct ResourceEvent : Event {
   Resource resource;
   int threshold;
   Comparator comparator;
-  Message* nextAction;
-  EventKind kind;
 
-  ResourceEvent(Resource r, int t, Comparator c, Message* ac, EventKind ek);
+  ResourceEvent(Resource re, int t, Comparator c, Message* r, EventKind k) : Event(r, nullptr, k)
+  {
+    resource = re; threshold = t; comparator = c; type = EventType::RESOURCE;
+  }
+
+  ResourceEvent(Resource re, int t, Comparator c, bool* b, EventKind k) : Event(nullptr, b, k)
+  {
+    resource = re; threshold = t; comparator = c; type = EventType::RESOURCE;
+  }
 };
 
-struct LocationEvent {
-  UnitDescriptor units;
-  BWAPI::Position position;
-  Region region;
-  Message* nextAction;
-  EventKind kind;
+struct CreateEvent : Event {
+  int ecgID;
+  int remainingCount;
 
-  LocationEvent(UnitDescriptor ud, BWAPI::Position pos, Region reg, Message* ac, EventKind ek);
+  CreateEvent(int eid, int rc, bool* b, EventKind k) : Event(nullptr, b, k)
+  {
+    ecgID = eid; remainingCount = rc; type = EventType::CREATE;
+  }
 };
-
-// struct ConstructionEvent { TODO: Some magic shit to make this work
-//   Message nextAction;
-// };
 
 class EventManager
 {
   EventManager();
 
-  std::list<ArmyEvent*>            armyEventList;
-  std::list<ResourceEvent*>        resourceEventList;
-  std::list<LocationEvent*>        locationEventList;
-  // std::list<ConstructionEvent>  constructionEventList;
+  std::list<Event*>                eventList;
 
 public:
   // singletons
   static EventManager & Instance();
 
+  // TODO: Add register for events with boolean responses
   void        registerEvent(Message* message);
   void        registerArmyEvent(Message* event, Message* response, EventKind kind);
   void        registerResourceEvent(Message* event, Message* response, EventKind kind);
-  void        registerLocationEvent(Message* event, Message* response, EventKind kind);
+  void        registerCreateEvent(int ecgID, int quantity, bool* response, EventKind kind);
 
+  void        checkEvent(Event* event);
   bool        checkArmyEvent(ArmyEvent* event);
   bool        checkResourceEvent(ResourceEvent* event);
-  bool        checkLocationEvent(LocationEvent* event);
+  bool        checkCreateEvent(CreateEvent* event);
 
   void        update();
+  void        onUnitComplete(BWAPI::Unit unit);
 
 };
 }

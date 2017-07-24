@@ -3,6 +3,7 @@
 #include "Message.h"
 #include "MessageManager.h"
 #include "Global.h"
+#include "EventManager.h"
 
 using namespace ECGBot;
 
@@ -17,26 +18,32 @@ ECGStarcraftManager & ECGStarcraftManager::Instance()
   return instance;
 }
 
-void ECGStarcraftManager::evaluateAction(Message* message)
+void ECGStarcraftManager::evaluateAction(Message* message, bool* blocking)
 {
   if (strcmp(message->readType(), "build") == 0)
-    build(message);
+    build(message, blocking);
   else if (strcmp(message->readType(), "gather") == 0)
-    gather(message);
+    gather(message, blocking);
   else if (strcmp(message->readType(), "move") == 0)
-    move(message);
+    move(message, blocking);
+  else if (blocking != nullptr)
+    *blocking = false;
 }
 
-void ECGStarcraftManager::build(Message* message)
+void ECGStarcraftManager::build(Message* message, bool* blocking)
 {
   BWAPI::UnitType unitType = message->readUnitType();
   int quantity = message->readQuantity();
+  int ecgID = message->readECGID();
 
   for (int i = 0; i < quantity; i++)
-    UAlbertaBot::Global::Production().queueLowPriorityUnit(unitType);
+    UAlbertaBot::Global::Production().queueLowPriorityUnit(unitType, ecgID);
+
+  if (blocking != nullptr)
+    EventManager::Instance().registerCreateEvent(ecgID, quantity, blocking, EventKind::ONCE);
 }
 
-void ECGStarcraftManager::gather(Message* message)
+void ECGStarcraftManager::gather(Message* message, bool* blocking)
 {
   BWAPI::Unitset workers;
 
@@ -49,8 +56,8 @@ void ECGStarcraftManager::gather(Message* message)
   else
     workers = ECGUtil::resolveUnitDescriptor(commandedUnits, BWAPI::Filter::GetType == BWAPI::UnitTypes::Terran_SCV);
 
-  if (workers.empty())
-    return;
+  // if (workers.empty())
+  //   return;
 
   if (resourceType == Resource::MINERALS)
   {
@@ -69,9 +76,12 @@ void ECGStarcraftManager::gather(Message* message)
         UAlbertaBot::Global::Workers().setWorkerJob(worker, UAlbertaBot::WorkerData::Gas, refinery);
     }
   }
+
+  if (blocking != nullptr)
+    *blocking = false;
 }
 
-void ECGStarcraftManager::move(Message* message)
+void ECGStarcraftManager::move(Message* message, bool* blocking)
 {
   UnitDescriptor commandedUnits = message->readCommandedUnit();
   BWAPI::Position landmark = message->readLandmark();
@@ -82,4 +92,6 @@ void ECGStarcraftManager::move(Message* message)
 
   if (!movers.empty())
     movers.move(destination);
+
+  // register boolean army event to make sure they moved
 }

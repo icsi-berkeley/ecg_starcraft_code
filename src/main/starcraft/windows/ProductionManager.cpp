@@ -1,6 +1,7 @@
 #include "ProductionManager.h"
 #include "Global.h"
 #include "UnitUtil.h"
+#include "NameManager.h"
 
 using namespace UAlbertaBot;
 
@@ -350,6 +351,7 @@ void ProductionManager::create(BWAPI::Unit producer, BuildOrderItem & item)
         && !t.getUnitType().isAddon())
     {
         // send the building task to the building manager
+				// TODO: use ecgID on buildings too
         _buildingManager.addBuildingTask(t.getUnitType(), BWAPI::Broodwar->self()->getStartLocation());
     }
     else if (t.getUnitType().isAddon())
@@ -368,7 +370,8 @@ void ProductionManager::create(BWAPI::Unit producer, BuildOrderItem & item)
         }
         else
         {
-            producer->train(t.getUnitType());
+            if (producer->train(t.getUnitType()))
+							ECGBot::NameManager::Instance().onUnitProduction(item.ecgID, producer->getID());
         }
     }
     // if we're dealing with a tech research
@@ -694,12 +697,12 @@ bool ProductionManager::canPlanBuildOrderNow() const
     return true;
 }
 
-void ProductionManager::queueHighPriorityUnit(BWAPI::UnitType unit)
+void ProductionManager::queueHighPriorityUnit(BWAPI::UnitType unit, int ecgID)
 {
-	_queue.queueAsHighestPriority(MetaType(unit), false);
+	_queue.queueAsHighestPriority(MetaType(unit), false, ecgID);
 }
 
-void ProductionManager::queueLowPriorityUnit(BWAPI::UnitType unit)
+void ProductionManager::queueLowPriorityUnit(BWAPI::UnitType unit, int ecgID)
 {
-	_queue.queueAsLowestPriority(MetaType(unit), false);
+	_queue.queueAsLowestPriority(MetaType(unit), false, ecgID);
 }
