@@ -6,13 +6,13 @@
 namespace ECGBot
 {
 
-enum EventType {ARMY, RESOURCE, CREATE};
+enum EventType {ARMY, RESOURCE, CREATE, SEQUENTIAL};
 
 struct Event {
   bool* boolResponse;
   Message* response;
   EventKind kind; // EventKind gives the trigger conditions whereas EventType gives the specific class of event
-  EventType type; // Talk about confusing naming
+  EventType type; // Talk about terrible, confusing naming
   bool block;
   bool completed;
 
@@ -64,6 +64,15 @@ struct CreateEvent : Event {
   }
 };
 
+struct SequentialEvent : Event {
+  bool* secondIncomplete;
+
+  SequentialEvent(Message* r, bool* si) : Event(r, nullptr, EventKind::ONCE)
+  {
+    block = true; secondIncomplete = si; type = EventType::SEQUENTIAL;
+  }
+};
+
 class EventManager
 {
   EventManager();
@@ -79,11 +88,13 @@ public:
   void        registerArmyEvent(Message* event, Message* response, EventKind kind);
   void        registerResourceEvent(Message* event, Message* response, EventKind kind);
   void        registerCreateEvent(int ecgID, int quantity, bool* response, EventKind kind);
+  bool*       registerSequentialEvent(Message* response, bool* secondIncomplete);
 
   void        checkEvent(Event* event);
   bool        checkArmyEvent(ArmyEvent* event);
   bool        checkResourceEvent(ResourceEvent* event);
   bool        checkCreateEvent(CreateEvent* event);
+  bool        checkSequentialEvent(SequentialEvent* event);
 
   void        update();
   void        onUnitComplete(BWAPI::Unit unit);

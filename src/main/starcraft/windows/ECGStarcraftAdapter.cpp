@@ -75,13 +75,8 @@ void ECGStarcraftAdapter::onFrame()
       MessageManager::Instance().sendStarted();
     else if (currentMessage->isConditional())
       EventManager::Instance().registerEvent(currentMessage);
-    else if (currentMessage->isAction())
+    else
       ECGStarcraftManager::Instance().evaluateAction(currentMessage);
-    else if (currentMessage->isSequential())
-    {
-      return; // TODO: Handle sequentials
-    }
-
   }
 
   _mapTools.update();

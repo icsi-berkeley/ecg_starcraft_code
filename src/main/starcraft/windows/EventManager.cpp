@@ -55,6 +55,14 @@ void EventManager::registerCreateEvent(int ecgID, int quantity, bool* response, 
   eventList.push_back(newEvent);
 }
 
+bool* EventManager::registerSequentialEvent(Message* response, bool* secondIncomplete)
+{
+  BWAPI::Broodwar->sendText("Registering sequential event");
+  SequentialEvent* newEvent = new SequentialEvent(response, secondIncomplete);
+  eventList.push_back(newEvent);
+  return &(newEvent->block);
+}
+
 bool EventManager::checkArmyEvent(ArmyEvent* event)
 {
   BWAPI::Unitset matchedSet = ECGUtil::resolveUnitDescriptor(event->units);
@@ -97,6 +105,10 @@ bool EventManager::checkCreateEvent(CreateEvent* event)
   return event->remainingCount <= 0;
 }
 
+bool EventManager::checkSequentialEvent(SequentialEvent* event)
+{
+  return true;
+}
 
 void EventManager::update()
 {
@@ -109,6 +121,8 @@ void EventManager::update()
     }
     else if (event->completed)
     {
+      if (event->type == EventType::SEQUENTIAL && ((SequentialEvent*) event)->secondIncomplete != nullptr)
+        *(((SequentialEvent*) event)->secondIncomplete) = false;
       delete event->response;
       delete event;
       eventList.erase(eventIter++);
@@ -127,6 +141,9 @@ void EventManager::update()
           break;
         case EventType::CREATE:
           result = checkCreateEvent((CreateEvent*) event);
+          break;
+        case EventType::SEQUENTIAL:
+          result = checkSequentialEvent((SequentialEvent*) event);
           break;
       }
 

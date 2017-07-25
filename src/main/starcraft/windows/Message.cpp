@@ -110,6 +110,18 @@ Message* Message::readResponse()
   return new Message((*body)["response"], cursorPosition, selectedUnits);
 }
 
+Message* Message::readFirst()
+{
+  assert((*body)["first"].IsObject());
+  return new Message((*body)["first"], cursorPosition, selectedUnits);
+}
+
+Message* Message::readSecond()
+{
+  assert((*body)["second"].IsObject());
+  return new Message((*body)["second"], cursorPosition, selectedUnits);
+}
+
 int Message::readQuantity()
 {
   assert((*body)["quantity"].IsInt());

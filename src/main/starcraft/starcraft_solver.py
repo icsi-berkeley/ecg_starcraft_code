@@ -544,6 +544,107 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
                         "ecg_id": 2345
                     }
                 }
+            elif choice == "32":
+                #Build a barracks and then build 5 SCVs!
+                message = {
+                  "type": "sequential",
+                  "first": {
+                      "type": "build",
+                      "parents": ["action"],
+                      "quantity": 1,
+                      "unit_type": "barracks",
+                      "ecg_id": 23456
+                  },
+                  "second": {
+                      "type": "build",
+                      "parents": ["action"],
+                      "quantity": 5,
+                      "unit_type": "scv",
+                      "ecg_id": 234567
+                  }
+                }
+            elif choice == "33":
+                #Build 2 SCVs and then move them here!
+                message = message = {
+                  "type": "sequential",
+                  "first": {
+                      "type": "build",
+                      "parents": ["action"],
+                      "quantity": 2,
+                      "unit_type": "scv",
+                      "ecg_id": 345
+                  },
+                  "second": {
+                      "type": "move",
+                      "parents": ["action"],
+                      "location": {
+                          "type": "location_descriptor",
+                          "landmark": None,
+                          "region": "EXACT"
+                      },
+                      "commanded_unit": {
+                          "type": "unit_descriptor",
+                          "quantity": 2,
+                          "comparator": "GEQ",
+                          "name": None,
+                          "unit_type": "scv",
+                          "ecg_id": 345,
+                          "location": None,
+                          "status": "NA",
+                          "ally": True
+                      }
+                  }
+                }
+            elif choice == "36":
+                #If I ever have less than 10 SCVs, build an SCV and make it mine minerals!
+                message = {
+                    "type": "conditional",
+                    "trigger": "ALWAYS",
+                    "event": {
+                        "type": "army",
+                        "parents": ["event"],
+                        "unit_descriptor": {
+                            "type": "unit_descriptor",
+                            "quantity": 9,
+                            "comparator": "LEQ",
+                            "name": None,
+                            "unit_type": "scv",
+                            "ecg_id": None,
+                            "location": None,
+                            "status": "NA",
+                            "ally": True
+                        }
+                    },
+                    "response": {
+                        "type": "sequential",
+                        "first": {
+                            "type": "build",
+                            "parents": ["action"],
+                            "quantity": 1,
+                            "unit_type": "scv",
+                            "ecg_id": 3456
+                        },
+                        "second": {
+                            "type": "gather",
+                            "parents": ["action"],
+                            "resource_type": "MINERALS",
+                            "commanded_unit": {
+                                "type": "unit_descriptor",
+                                "quantity": 1,
+                                "comparator": "GEQ",
+                                "name": None,
+                                "unit_type": "scv",
+                                "ecg_id": 3456,
+                                "location": None,
+                                "status": "NA",
+                                "ally": True
+                            }
+                        }
+                    }
+                }
+            # elif choice == "37":
+            #     #If I have fewer than 3 SCVs harvesting gas, build an SCV and make it harvest gas!
+            #     message =
             else:
                 print("only choices 2, 3 and 4 are currently supported.")
                 pass

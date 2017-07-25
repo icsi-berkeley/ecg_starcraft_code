@@ -20,7 +20,12 @@ ECGStarcraftManager & ECGStarcraftManager::Instance()
 
 void ECGStarcraftManager::evaluateAction(Message* message, bool* blocking)
 {
-  if (strcmp(message->readType(), "build") == 0)
+  if (message->isSequential())
+  {
+    bool* blockSecond = EventManager::Instance().registerSequentialEvent(message->readSecond(), blocking);
+    evaluateAction(message->readFirst(), blockSecond);
+  }
+  else if (strcmp(message->readType(), "build") == 0)
     build(message, blocking);
   else if (strcmp(message->readType(), "gather") == 0)
     gather(message, blocking);

@@ -2,6 +2,7 @@
 
 #include <BWAPI.h>
 #include "rapidjson/document.h"
+#include "NameManager.h"
 
 namespace ECGBot
 {
@@ -109,8 +110,10 @@ public:
 			matchedSet.insert(BWAPI::Broodwar->getUnit(ud.unitID));
       return matchedSet;
     }
-		//else if (ud.ecgID > 0)
-		  // TODO: Do something with the ECGidentifier
+		else if (ud.ecgID > 0)
+    {
+      return NameManager::Instance().getByECGID(ud.ecgID);
+    }
 
     // Filter based on type and alliance
     BWAPI::Unitset filteredSet = BWAPI::Unitset();

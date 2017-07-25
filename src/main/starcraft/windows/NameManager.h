@@ -23,17 +23,18 @@ public:
   // singletons
   static NameManager & Instance();
 
-  std::string getUnitName(int unitID);
-  int         getUnitID(std::string unitName);
-  int         getECGID(int unitID);
+  std::string     getUnitName(int unitID);
+  int             getUnitID(std::string unitName);
+  int             getECGID(int unitID);
+  BWAPI::Unitset  getByECGID(int ecgID);
 
-  void        onUnitReadyFrame(int producerID, int unitID);
-  void        onUnitProduction(int ecgID, int producerID);
+  void            onUnitReadyFrame(int producerID, int unitID);
+  void            onUnitProduction(int ecgID, int producerID);
   // TODO: remove unit names on destruction
-  void        onUnitCreate(BWAPI::Unit unit);
-  void        onUnitShow(BWAPI::Unit unit);
+  void            onUnitCreate(BWAPI::Unit unit);
+  void            onUnitShow(BWAPI::Unit unit);
 
-  void        draw();
+  void            draw();
 
 };
 

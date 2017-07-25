@@ -49,6 +49,16 @@ int NameManager::getECGID(int unitID)
   return uidToEid[unitID];
 }
 
+BWAPI::Unitset NameManager::getByECGID(int ecgID)
+{
+  std::set<int> idSet = eidToUid[ecgID];
+  BWAPI::Unitset ecgSet = BWAPI::Unitset();
+  for (auto id : idSet)
+    ecgSet.insert(BWAPI::Broodwar->getUnit(id));
+
+  return ecgSet;
+}
+
 void NameManager::onUnitReadyFrame(int producerID, int unitID)
 {
   int ecgID = producerToEid[producerID];
