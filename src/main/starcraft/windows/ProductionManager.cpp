@@ -70,14 +70,14 @@ void ProductionManager::update()
 	// }
 
 	// detect if there's a build order deadlock once per second
-	if ((BWAPI::Broodwar->getFrameCount() % 24 == 0) && detectBuildOrderDeadlock())
-	{
-        if (Config::Debug::DrawBuildOrderSearchInfo)
-        {
-		    BWAPI::Broodwar->printf("Supply deadlock detected, building supply!");
-        }
-		_queue.queueAsHighestPriority(MetaType(BWAPI::Broodwar->self()->getRace().getSupplyProvider()), true);
-	}
+	// if ((BWAPI::Broodwar->getFrameCount() % 24 == 0) && detectBuildOrderDeadlock())
+	// {
+  //       if (Config::Debug::DrawBuildOrderSearchInfo)
+  //       {
+	// 	    BWAPI::Broodwar->printf("Supply deadlock detected, building supply!");
+  //       }
+	// 	_queue.queueAsHighestPriority(MetaType(BWAPI::Broodwar->self()->getRace().getSupplyProvider()), true);
+	// }
 
 	// if they have cloaked units get a new goal asap
 	// if (!_enemyCloakedDetected && Global::UnitInfo().enemyHasCloakedUnits())
@@ -352,7 +352,7 @@ void ProductionManager::create(BWAPI::Unit producer, BuildOrderItem & item)
     {
         // send the building task to the building manager
 				// TODO: use ecgID on buildings too
-        _buildingManager.addBuildingTask(t.getUnitType(), BWAPI::Broodwar->self()->getStartLocation());
+        _buildingManager.addBuildingTask(t.getUnitType(), BWAPI::Broodwar->self()->getStartLocation(), item.ecgID);
     }
     else if (t.getUnitType().isAddon())
     {

@@ -305,7 +305,7 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
                     "parents": ["action"],
                     "quantity": 1,
                     "unit_type": "scv",
-                    "ecg_id": 123456789
+                    "ecg_id": 123
                 }
             elif choice == "7":
                 # “Build 5 marines!”
@@ -314,7 +314,7 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
                     "parents": ["action"],
                     "quantity": 5,
                     "unit_type": "marine",
-                    "ecg_id": 123456789
+                    "ecg_id": 1234
                 }
             elif choice == "8":
                 # “Build a barracks!”
@@ -323,7 +323,7 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
                     "parents": ["action"],
                     "quantity": 1,
                     "unit_type": "barracks",
-                    "ecg_id": 123456789
+                    "ecg_id": 12345
                 }
             elif choice == "11":
                 # "Delta, move over here!"
@@ -501,7 +501,47 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
                         "parents": ["action"],
                         "quantity": 1,
                         "unit_type": "scv",
-                        "ecg_id": 123456789
+                        "ecg_id": 123456
+                    }
+                }
+            elif choice == "28":
+                #Whenever I reach the supply limit, build a supply depot!
+                message = {
+                    "type": "conditional",
+                    "trigger": "ALWAYS",
+                    "event": {
+                        "type": "resource",
+                        "parents": ["event"],
+                        "resource_type": "SUPPLY",
+                        "threshold": -1,
+                        "comparator": "EQ"
+                    },
+                    "response": {
+                        "type": "build",
+                        "parents": ["action"],
+                        "quantity": 1,
+                        "unit_type": "supplydepot",
+                        "ecg_id": 234
+                    }
+                }
+            elif choice == "29":
+                #While I have more than 100 minerals, build marines!
+                message = {
+                    "type": "conditional",
+                    "trigger": "WHILE",
+                    "event": {
+                        "type": "resource",
+                        "parents": ["event"],
+                        "resource_type": "MINERALS",
+                        "threshold": 101,
+                        "comparator": "GEQ"
+                    },
+                    "response": {
+                        "type": "build",
+                        "parents": ["action"],
+                        "quantity": 1,
+                        "unit_type": "marine",
+                        "ecg_id": 2345
                     }
                 }
             else:

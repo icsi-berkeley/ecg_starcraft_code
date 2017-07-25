@@ -93,5 +93,7 @@ void ECGStarcraftManager::move(Message* message, bool* blocking)
   if (!movers.empty())
     movers.move(destination);
 
-  // register boolean army event to make sure they moved
+  // TODO: register boolean army event to make sure they moved
+  if (blocking != nullptr)
+    *blocking = false;
 }

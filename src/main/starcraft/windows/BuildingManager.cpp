@@ -2,6 +2,7 @@
 #include "BuildingManager.h"
 #include "Micro.h"
 #include "Global.h"
+#include "NameManager.h"
 
 using namespace UAlbertaBot;
 
@@ -179,6 +180,9 @@ void BuildingManager::checkForStartedConstruction()
                 b.underConstruction = true;
                 b.buildingUnit = buildingStarted;
 
+                // Make sure the name manager knows to associate the ecgID of the building with its new ID
+                ECGBot::NameManager::Instance().onUnitProduction(b.ecgID, b.builderUnit->getID());
+
                 // if we are zerg, the buildingUnit now becomes nullptr since it's destroyed
                 if (BWAPI::Broodwar->self()->getRace() == BWAPI::Races::Zerg)
                 {
@@ -253,12 +257,12 @@ bool BuildingManager::isEvolvedBuilding(BWAPI::UnitType type)
 }
 
 // add a new building to be constructed
-void BuildingManager::addBuildingTask(BWAPI::UnitType type, BWAPI::TilePosition desiredLocation)
+void BuildingManager::addBuildingTask(BWAPI::UnitType type, BWAPI::TilePosition desiredLocation, int ecgID)
 {
     _reservedMinerals += type.mineralPrice();
     _reservedGas	     += type.gasPrice();
 
-    Building b(type, desiredLocation);
+    Building b(type, desiredLocation, ecgID);
     b.status = BuildingStatus::Unassigned;
 
     _buildings.push_back(b);

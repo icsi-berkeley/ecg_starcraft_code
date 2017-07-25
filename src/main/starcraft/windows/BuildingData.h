@@ -25,6 +25,7 @@ public:
     bool                    isGasSteal;
 	bool                    buildCommandGiven;
 	bool                    underConstruction;
+  int                     ecgID; // Custom: added ecgID to track unit construction
 
 	Building()
 		: desiredPosition   (0,0)
@@ -38,10 +39,11 @@ public:
         , buildCommandGiven (false)
         , underConstruction (false)
         , isGasSteal        (false)
+        , ecgID             (0)
     {}
 
 	// constructor we use most often
-	Building(BWAPI::UnitType t, BWAPI::TilePosition desired)
+	Building(BWAPI::UnitType t, BWAPI::TilePosition desired, int eid = 0)
 		: desiredPosition   (desired)
         , finalPosition     (0,0)
         , position          (0,0)
@@ -53,6 +55,7 @@ public:
         , buildCommandGiven (false)
         , underConstruction (false)
         , isGasSteal        (false)
+        , ecgID             (eid)
     {}
 
 	// equals operator

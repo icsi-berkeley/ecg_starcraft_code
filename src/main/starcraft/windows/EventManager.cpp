@@ -64,9 +64,12 @@ bool EventManager::checkArmyEvent(ArmyEvent* event)
 bool EventManager::checkResourceEvent(ResourceEvent* event)
 {
   int value;
+  int threshold = event->threshold;
   switch (event->resource) {
     case Resource::SUPPLY:
       value = BWAPI::Broodwar->self()->supplyUsed();
+      threshold = threshold < 0 ? BWAPI::Broodwar->self()->supplyTotal() + threshold + 1 : threshold;
+      // BWAPI::Broodwar->sendText("Supply Value: %d, Supply Threshold: %d", value, threshold);
       break;
     case Resource::MINERALS:
       value = BWAPI::Broodwar->self()->minerals();
@@ -80,11 +83,11 @@ bool EventManager::checkResourceEvent(ResourceEvent* event)
 
   switch(event->comparator) {
     case Comparator::GEQ:
-      return value > event->threshold;
+      return value >= threshold;
     case Comparator::LEQ:
-      return value < event->threshold;
+      return value <= threshold;
     case Comparator::EQ:
-      return value == event->threshold;
+      return value == threshold;
   }
   return false;
 }
@@ -157,9 +160,7 @@ void EventManager::update()
 
 void EventManager::onUnitComplete(BWAPI::Unit unit)
 {
-  BWAPI::Broodwar->sendText("on unit complete");
   int eid = NameManager::Instance().getECGID(unit->getID());
-  BWAPI::Broodwar->sendText(std::to_string(eid).c_str());
   for (auto& event : eventList)
     if (event->type == EventType::CREATE)
       if (((CreateEvent*) event)->ecgID == eid)

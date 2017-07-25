@@ -48,6 +48,9 @@ public:
 		else if (strcmp(unitName, "refinery") == 0) {
 			return BWAPI::UnitTypes::Terran_Refinery;
 		}
+    else if (strcmp(unitName, "supplydepot") == 0) {
+			return BWAPI::UnitTypes::Terran_Supply_Depot;
+		}
 		else if (strcmp(unitName, "marine") == 0) {
 			return BWAPI::UnitTypes::Terran_Marine;
 		}
@@ -63,7 +66,7 @@ public:
 		return BWAPI::UnitTypes::AllUnits;
 	}
 
-	static std::string ECGUtil::getUnitName(BWAPI::UnitType unitType) {
+	static std::string ECGUtil::getUnitTypeName(BWAPI::UnitType unitType) {
 		if (unitType == BWAPI::UnitTypes::Terran_Command_Center) {
 			return "commandcenter";
 		}
@@ -72,6 +75,9 @@ public:
 		}
 		else if (unitType == BWAPI::UnitTypes::Terran_Refinery) {
 			return "refinery";
+		}
+    else if (unitType == BWAPI::UnitTypes::Terran_Supply_Depot) {
+			return "supplydepot";
 		}
 		else if (unitType == BWAPI::UnitTypes::Terran_Marine) {
 			return "marine";

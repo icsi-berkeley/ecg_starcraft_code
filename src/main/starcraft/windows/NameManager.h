@@ -28,7 +28,7 @@ public:
   int         getECGID(int unitID);
 
   void        onUnitReadyFrame(int producerID, int unitID);
-  void        onUnitProduction(int ecgID, int unitID);
+  void        onUnitProduction(int ecgID, int producerID);
   // TODO: remove unit names on destruction
   void        onUnitCreate(BWAPI::Unit unit);
   void        onUnitShow(BWAPI::Unit unit);

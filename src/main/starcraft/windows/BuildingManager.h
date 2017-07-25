@@ -35,7 +35,7 @@ public:
     BuildingManager();
 
     void                update();
-    void                addBuildingTask(BWAPI::UnitType type,BWAPI::TilePosition desiredLocation);
+    void                addBuildingTask(BWAPI::UnitType type,BWAPI::TilePosition desiredLocation, int ecgID = 0);
     void                drawBuildingInformation(int x,int y);
     BWAPI::TilePosition getBuildingLocation(const Building & b);
 
