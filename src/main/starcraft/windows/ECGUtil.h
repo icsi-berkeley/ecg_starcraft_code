@@ -49,7 +49,7 @@ public:
 		else if (strcmp(unitName, "refinery") == 0) {
 			return BWAPI::UnitTypes::Terran_Refinery;
 		}
-    else if (strcmp(unitName, "supplydepot") == 0) {
+    else if (strcmp(unitName, "depot") == 0) {
 			return BWAPI::UnitTypes::Terran_Supply_Depot;
 		}
 		else if (strcmp(unitName, "marine") == 0) {
@@ -78,7 +78,7 @@ public:
 			return "refinery";
 		}
     else if (unitType == BWAPI::UnitTypes::Terran_Supply_Depot) {
-			return "supplydepot";
+			return "depot";
 		}
 		else if (unitType == BWAPI::UnitTypes::Terran_Marine) {
 			return "marine";

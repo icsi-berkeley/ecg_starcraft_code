@@ -29,9 +29,13 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
         self.inputs = []
         self.game_started = False
         self._verbose = True
+        self._next_ecg_id = 1234
+        self._current_ecg_id = None
+        self._quantity_modifier = 0
 
         self.adapter_address = "StarCraft"
         self.transport.subscribe(self.adapter_address, self.adapter_callback)
+        self.text_address = "{}_{}".format(self.federation, "TextAgent")
         self.adapter_templates = self.read_templates(
             os.path.join(dir_name, "adapter_templates.json"))
 
@@ -68,6 +72,8 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
             pprint(request)
         if "is_started" in request:
             self.game_started = True
+        if "command" in request:
+            self.transport.send(self.text_address, json.dumps(request))
 
     def adapter_command(self, command):
         """
@@ -75,6 +81,7 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
         """
         self.validate_message(command)
         self.transport.send(self.adapter_address, json.dumps(command))
+        self._current_ecg_id = None
 
         if self._verbose:
             print("Sent to adapter:")
@@ -107,7 +114,8 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
             predicate_type = actspec['predicate_type']
             try:
                 dispatch = getattr(self, "solve_%s" %predicate_type)
-                dispatch(actspec)
+                message = dispatch(actspec)
+                self.adapter_command(message)
                 completed.insert(0, index)
             except AttributeError as e:
                 traceback.print_exc()
@@ -129,37 +137,34 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
         obj = parameters['createdThing']['objectDescriptor'] #shouldn't this just be 'descriptor'?
         message["quantity"] = self.get_quantity(obj)
         message["unit_type"] = self.get_type(obj)
-
-        message["ecg_id"] = None # TODO
-
-        self.adapter_command(message)
+        message["ecg_id"] = self.get_ecg_id(True)
+        return message
 
     def command_gather(self, parameters):
         """
         Tells the game to build an object
         """
         message = dict(self.adapter_templates["gather"])
-        obj = parameters['resource']['objectDescriptor'] #shouldn't this just be 'descriptor'?
-        message["resource_type"] = "MINERALS" if self.get_type(obj) == 'mineral' else "GAS"
-
-        self.adapter_command(message)
+        resource = parameters['resource']['objectDescriptor'] #shouldn't this just be 'descriptor'?
+        message["resource_type"] = "MINERALS" if self.get_type(resource) == 'mineral' else "GAS"
+        message["commanded_unit"] = self.get_unit_descriptor(parameters['protagonist']['objectDescriptor'])
+        return message
 
     def command_move(self, parameters):
         """
         Tells the game to move a unit
         """
         message = dict(self.adapter_templates["move"])
-        message["location"] = dict(self.adapter_templates["location_descriptor"])
         if parameters['spg']['spgDescriptor']['goal']:
-            pass #TODO
+            message["location"] = self.get_location_descriptor(parameters['spg']['spgDescriptor']['goal']['locationDescriptor'])
         elif parameters['heading']:
+            message["location"] = dict(self.adapter_templates["location_descriptor"])
             message["location"]["region"] = "EXACT"
             message["location"]["landmark"] = None
         else:
             raise RuntimeError("Invalid ActSpec")
-        message["commanded_unit"] = None #TODO
-
-        self.adapter_command(message)
+        message["commanded_unit"] = self.get_unit_descriptor(parameters['protagonist']['objectDescriptor'])
+        return message
 
     def command_squad(self, parameters):
         raise NotImplementedError()
@@ -170,29 +175,145 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
     def command_attack(self, parameters):
         raise NotImplementedError()
 
-    def get_quantity(self, objectDescriptor):
-        if objectDescriptor['number'] == "plural":
+    def command_communication(self, parameters):
+        # need to do something in order to pass the listener on as the protagonist of the content
+        content = parameters['content']
+        content['eventProcess']['protagonist'] = parameters['listener']
+        return self.route_event(content, 'command')
+
+    def assertion_possess(self, parameters):
+        if parameters['possessed']['objectDescriptor']['type'] not in ['mineral', 'gas', 'supply']:
+            message = dict(self.adapter_templates["army"])
+            message['unit_descriptor'] = self.get_unit_descriptor(parameters['possessed']['objectDescriptor'])
+            return message
+        raise Exception("Not implemented assertion") #TODO support more assertions
+
+    def assertion_be(self, parameters):
+        message = dict(self.adapter_templates["resource"])
+        if parameters['state']['relation'] == 'at':
+            message["comparator"] = "EQ"
+            if parameters['state']['objectDescriptor']['type'] == 'limit':
+                message["threshold"] = -1
+                if parameters['state']['objectDescriptor']['modifier']['objectDescriptor']['type'] == 'supply2':
+                    message["resource_type"] = "SUPPLY"
+                    return message
+        raise Exception("Not implemented assertion")
+
+    def get_location_descriptor(self, locationDescriptor):
+        location_descriptor = dict(self.adapter_templates["location_descriptor"])
+        location_descriptor["region"] = self.get_region(locationDescriptor)
+        location_descriptor["landmark"] = self.get_unit_descriptor(locationDescriptor['objectDescriptor'])
+        return location_descriptor
+
+    def get_region(self, locationDescriptor):
+        # TODO: Add more regions
+        if locationDescriptor['relation'] == 'behind':
+            return "BACK"
+        return "EXACT"
+
+    def get_unit_descriptor(self, objectDescriptor):
+        unit_descriptor = dict(self.adapter_templates["unit_descriptor"])
+        unit_descriptor["name"] = self.get_name(objectDescriptor)
+        unit_descriptor["ecg_id"] = self.get_ecg_id()
+        unit_descriptor["status"] = self.get_status(objectDescriptor)
+        unit_descriptor["comparator"] = self.get_direction(objectDescriptor)
+        unit_descriptor["quantity"] = self.get_quantity(objectDescriptor, True)
+        unit_descriptor["ally"] = self.get_ally(objectDescriptor)
+        unit_descriptor["unit_type"] = self.get_type(objectDescriptor)
+        unit_descriptor["location"] = None # FIXME
+        return unit_descriptor
+
+    def get_direction(self, objectDescriptor):
+        if 'direction' in objectDescriptor:
+            if objectDescriptor['direction'] == 'down':
+                self._quantity_modifier = -1
+                return "LEQ"
+            elif objectDescriptor['direction'] == 'up':
+                self._quantity_modifier = 1
+                return "GEQ"
+        elif 'quantity' in objectDescriptor and 'amount' in objectDescriptor['quantity']:
+            return "EQ"
+        return "GEQ"
+
+    def get_quantity(self, objectDescriptor, use_quantity_modifier = False):
+        if 'quantity' in objectDescriptor and 'amount' in objectDescriptor['quantity']:
+            if use_quantity_modifier:
+                return int(objectDescriptor['quantity']['amount']['value']) + self._quantity_modifier
             return int(objectDescriptor['quantity']['amount']['value'])
         return 1
 
     def get_type(self, objectDescriptor):
-        return objectDescriptor['type']
+        if 'type' in objectDescriptor and objectDescriptor['type'] not in ['robot', 'sentient']:
+            return objectDescriptor['type']
+        return None
+
+    def get_status(self, objectDescriptor):
+        # TODO: Add more statuses
+        if 'status' in objectDescriptor:
+            if objectDescriptor['status'] == 'idle':
+                return "IDLE"
+        return "NA"
+
+    def get_name(self, objectDescriptor):
+        if 'referent' in objectDescriptor and objectDescriptor['referent'] not in ['sentient']:
+            return objectDescriptor['referent']
+        return None
+
+    def get_ally(self, objectDescriptor):
+        if 'alliance' in objectDescriptor:
+            return objectDescriptor['alliance'] == 'ally'
+        return True
+
+    def get_ecg_id(self, new_id = False):
+        if new_id:
+            self._current_ecg_id = self._next_ecg_id
+            self._next_ecg_id += 1
+        return self._current_ecg_id
+
+    def route_event(self, eventDescription, predicate):
+        if "complexKind" in eventDescription and eventDescription['complexKind'] == "serial":
+            return self.solve_serial(eventDescription, predicate)
+        if "complexKind" in eventDescription and eventDescription['complexKind'] == "conditional":
+            dispatch = getattr(self, "solve_conditional_{}".format(predicate))
+            return dispatch(eventDescription)
+        features = eventDescription['e_features']
+        if features:
+            # Set eventFeatures
+            self.eventFeatures = features['eventFeatures']
+        parameters = eventDescription['eventProcess']
+        return self.route_action(parameters, predicate)
 
     def solve_serial(self, parameters, predicate):
         """
         Solves a serial event
         """
-        self.route_action(parameters['process1'], predicate)
-        self.route_action(parameters['process2'], predicate)
+        message = dict(self.adapter_templates["sequential"])
+        message['first'] = self.route_event(parameters['condition'], predicate)
+        message['second'] = self.route_event(parameters['core'], predicate)
+        return message
 
     def solve_command(self, actspec):
         """
         Solves a command
         """
         parameters = actspec['eventDescriptor']
-        self.route_event(parameters, "command")
+        return self.route_event(parameters, "command")
+
+    def solve_conditional_command(self, actspec):
+        """ Takes in conditionalED."""
+        message = dict(self.adapter_templates["conditional"])
+        message['event'] = self.route_event(actspec['condition'], 'assertion')
+        message['response'] = self.route_event(actspec['core'], 'command')
+        message['trigger'] = "ALWAYS" # TODO: generalize for other triggers
+        return message
+
+    def solve_causal(self, parameters, predicate):
+        action = parameters['affectedProcess']['actionary']
+        dispatch = getattr(self, "{}_{}".format(predicate, action))
+        return dispatch(parameters['affectedProcess'])
 
     def validate_message(self, message):
+        print(message)
         template = self.adapter_templates[message["type"]]
         if "parents" in template:
             for parent_type in template["parents"]:
@@ -656,4 +777,4 @@ class BasicStarcraftProblemSolver(CoreProblemSolver):
 if __name__ == "__main__":
     solver = BasicStarcraftProblemSolver(sys.argv[1:])
     solver.adapter_connect()
-    solver.temporary_hack()
+    # solver.temporary_hack()

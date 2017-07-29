@@ -105,6 +105,7 @@ void ECGStarcraftAdapter::onSendText(std::string text)
 {
   // Send the text to the game if it is not being processed.
   BWAPI::Broodwar->sendText("%s", text.c_str());
+  MessageManager::Instance().sendCommandText(text);
 
   // Make sure to use %s and pass the text as a parameter,
   // otherwise you may run into problems when you use the %(percent) character!

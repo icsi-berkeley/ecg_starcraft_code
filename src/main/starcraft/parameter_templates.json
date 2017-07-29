@@ -186,6 +186,24 @@
         "descriptor": "processFeatures"
       }
     },
+    "Communication": {
+        "parents": ["Process"],
+        "content": {
+          "eventDescription": "content"
+        },
+        "media": {
+          "descriptor": "objectDescriptor"
+        },
+        "listener": {
+          "descriptor": "objectDescriptor"
+        }
+    },
+    "PossProcess": {
+        "parents": ["Process"],
+        "possessed": {
+          "descriptor": "objectDescriptor"
+        }
+    },
     "GatherResource": {
       "protagonist": {
         "descriptor": "objectDescriptor"

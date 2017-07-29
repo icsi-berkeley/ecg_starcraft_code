@@ -32,6 +32,7 @@ public:
     void              beginOutgoing();
     void              sendOutgoing();
     void              sendStarted();
+    void              sendCommandText(std::string text);
 
 };
 }

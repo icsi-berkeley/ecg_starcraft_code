@@ -80,3 +80,11 @@ void MessageManager::sendStarted()
 	requestWriter->Bool(true);
 	sendOutgoing();
 }
+
+void MessageManager::sendCommandText(std::string text)
+{
+	beginOutgoing();
+	requestWriter->Key("command");
+	requestWriter->String(text.c_str());
+	sendOutgoing();
+}
